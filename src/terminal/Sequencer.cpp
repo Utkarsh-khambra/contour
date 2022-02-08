@@ -15,6 +15,7 @@
 #include <terminal/Screen.h>
 #include <terminal/Sequencer.h>
 #include <terminal/SixelParser.h>
+#include <terminal/Terminal.h>
 #include <terminal/logging.h>
 #include <terminal/primitives.h>
 
@@ -68,8 +69,8 @@ namespace terminal
 
 namespace
 {
-    template <typename T, typename U>
-    std::optional<crispy::boxed<T, U>> decr(std::optional<crispy::boxed<T, U>> v)
+    template <typename TheTerminal, typename U>
+    std::optional<crispy::boxed<TheTerminal, U>> decr(std::optional<crispy::boxed<TheTerminal, U>> v)
     {
         if (v.has_value())
             --*v;
@@ -125,11 +126,11 @@ namespace
 
 namespace impl // {{{ some command generator helpers
 {
-    template <typename EventListener>
+    template <typename TheTerminal>
     ApplyResult setAnsiMode(Sequence const& _seq,
                             size_t _modeIndex,
                             bool _enable,
-                            Screen<EventListener>& _screen)
+                            Screen<TheTerminal>& _screen)
     {
         switch (_seq.param(_modeIndex))
         {
@@ -198,11 +199,11 @@ namespace impl // {{{ some command generator helpers
         return nullopt;
     }
 
-    template <typename EventListener>
+    template <typename TheTerminal>
     ApplyResult setModeDEC(Sequence const& _seq,
                            size_t _modeIndex,
                            bool _enable,
-                           Screen<EventListener>& _screen)
+                           Screen<TheTerminal>& _screen)
     {
         if (auto const modeOpt = toDECMode(_seq.param(_modeIndex)); modeOpt.has_value())
         {
@@ -363,8 +364,8 @@ namespace impl // {{{ some command generator helpers
         return Color {};
     }
 
-    template <typename EventListener>
-    ApplyResult dispatchSGR(Sequence const& _seq, Screen<EventListener>& _screen)
+    template <typename TheTerminal>
+    ApplyResult dispatchSGR(Sequence const& _seq, Screen<TheTerminal>& _screen)
     {
         if (_seq.parameterCount() == 0)
         {
@@ -458,8 +459,8 @@ namespace impl // {{{ some command generator helpers
         return ApplyResult::Ok;
     }
 
-    template <typename T>
-    ApplyResult CPR(Sequence const& _seq, Screen<T>& _screen)
+    template <typename TheTerminal>
+    ApplyResult CPR(Sequence const& _seq, Screen<TheTerminal>& _screen)
     {
         switch (_seq.param(0))
         {
@@ -469,8 +470,8 @@ namespace impl // {{{ some command generator helpers
         }
     }
 
-    template <typename T>
-    ApplyResult DECRQPSR(Sequence const& _seq, Screen<T>& _screen)
+    template <typename TheTerminal>
+    ApplyResult DECRQPSR(Sequence const& _seq, Screen<TheTerminal>& _screen)
     {
         if (_seq.parameterCount() != 1)
             return ApplyResult::Invalid; // -> error
@@ -487,8 +488,8 @@ namespace impl // {{{ some command generator helpers
             return ApplyResult::Invalid;
     }
 
-    template <typename T>
-    ApplyResult DECSCUSR(Sequence const& _seq, Screen<T>& _screen)
+    template <typename TheTerminal>
+    ApplyResult DECSCUSR(Sequence const& _seq, Screen<TheTerminal>& _screen)
     {
         if (_seq.parameterCount() <= 1)
         {
@@ -509,8 +510,8 @@ namespace impl // {{{ some command generator helpers
             return ApplyResult::Invalid;
     }
 
-    template <typename T>
-    ApplyResult ED(Sequence const& _seq, Screen<T>& _screen)
+    template <typename TheTerminal>
+    ApplyResult ED(Sequence const& _seq, Screen<TheTerminal>& _screen)
     {
         if (_seq.parameterCount() == 0)
             _screen.clearToEndOfScreen();
@@ -530,8 +531,8 @@ namespace impl // {{{ some command generator helpers
         return ApplyResult::Ok;
     }
 
-    template <typename T>
-    ApplyResult EL(Sequence const& _seq, Screen<T>& _screen)
+    template <typename TheTerminal>
+    ApplyResult EL(Sequence const& _seq, Screen<TheTerminal>& _screen)
     {
         switch (_seq.param_or(0, Sequence::Parameter { 0 }))
         {
@@ -543,8 +544,8 @@ namespace impl // {{{ some command generator helpers
         return ApplyResult::Ok;
     }
 
-    template <typename T>
-    ApplyResult TBC(Sequence const& _seq, Screen<T>& _screen)
+    template <typename TheTerminal>
+    ApplyResult TBC(Sequence const& _seq, Screen<TheTerminal>& _screen)
     {
         if (_seq.parameterCount() != 1)
         {
@@ -567,8 +568,8 @@ namespace impl // {{{ some command generator helpers
         return crispy::splitKeyValuePairs(s, ':');
     }
 
-    template <typename T>
-    ApplyResult setOrRequestDynamicColor(Sequence const& _seq, Screen<T>& _screen, DynamicColorName _name)
+    template <typename TheTerminal>
+    ApplyResult setOrRequestDynamicColor(Sequence const& _seq, Screen<TheTerminal>& _screen, DynamicColorName _name)
     {
         auto const& value = _seq.intermediateCharacters();
         if (value == "?")
@@ -617,8 +618,8 @@ namespace impl // {{{ some command generator helpers
         });
     }
 
-    template <typename T>
-    ApplyResult RCOLPAL(Sequence const& _seq, Screen<T>& _screen)
+    template <typename TheTerminal>
+    ApplyResult RCOLPAL(Sequence const& _seq, Screen<TheTerminal>& _screen)
     {
         if (_seq.intermediateCharacters().empty())
         {
@@ -635,8 +636,8 @@ namespace impl // {{{ some command generator helpers
         return ApplyResult::Ok;
     }
 
-    template <typename T>
-    ApplyResult SETCOLPAL(Sequence const& _seq, Screen<T>& _screen)
+    template <typename TheTerminal>
+    ApplyResult SETCOLPAL(Sequence const& _seq, Screen<TheTerminal>& _screen)
     {
         bool const ok = queryOrSetColorPalette(
             _seq.intermediateCharacters(),
@@ -677,8 +678,8 @@ namespace impl // {{{ some command generator helpers
         //     return fmt::format("{}:style={}", _regular, _style);
     }
 
-    template <typename T>
-    ApplyResult setAllFont(Sequence const& _seq, Screen<T>& _screen)
+    template <typename TheTerminal>
+    ApplyResult setAllFont(Sequence const& _seq, Screen<TheTerminal>& _screen)
     {
         // [read]  OSC 60 ST
         // [write] OSC 60 ; size ; regular ; bold ; italic ; bold italic ST
@@ -720,8 +721,8 @@ namespace impl // {{{ some command generator helpers
         return ApplyResult::Ok;
     }
 
-    template <typename T>
-    ApplyResult setFont(Sequence const& _seq, Screen<T>& _screen)
+    template <typename TheTerminal>
+    ApplyResult setFont(Sequence const& _seq, Screen<TheTerminal>& _screen)
     {
         auto const& params = _seq.intermediateCharacters();
         auto const splits = crispy::split(params, ';');
@@ -744,8 +745,8 @@ namespace impl // {{{ some command generator helpers
         return ApplyResult::Ok;
     }
 
-    template <typename T>
-    ApplyResult clipboard(Sequence const& _seq, Screen<T>& _screen)
+    template <typename TheTerminal>
+    ApplyResult clipboard(Sequence const& _seq, Screen<TheTerminal>& _screen)
     {
         // Only setting clipboard contents is supported, not reading.
         auto const& params = _seq.intermediateCharacters();
@@ -758,8 +759,8 @@ namespace impl // {{{ some command generator helpers
             return ApplyResult::Invalid;
     }
 
-    template <typename T>
-    ApplyResult NOTIFY(Sequence const& _seq, Screen<T>& _screen)
+    template <typename TheTerminal>
+    ApplyResult NOTIFY(Sequence const& _seq, Screen<TheTerminal>& _screen)
     {
         auto const& value = _seq.intermediateCharacters();
         if (auto const splits = crispy::split(value, ';'); splits.size() == 3 && splits[0] == "notify")
@@ -771,16 +772,16 @@ namespace impl // {{{ some command generator helpers
             return ApplyResult::Unsupported;
     }
 
-    template <typename T>
-    ApplyResult SETCWD(Sequence const& _seq, Screen<T>& _screen)
+    template <typename TheTerminal>
+    ApplyResult SETCWD(Sequence const& _seq, Screen<TheTerminal>& _screen)
     {
         string const& url = _seq.intermediateCharacters();
         _screen.setCurrentWorkingDirectory(url);
         return ApplyResult::Ok;
     }
 
-    template <typename T>
-    ApplyResult CAPTURE(Sequence const& _seq, Screen<T>& _screen)
+    template <typename TheTerminal>
+    ApplyResult CAPTURE(Sequence const& _seq, Screen<TheTerminal>& _screen)
     {
         // CSI Mode ; [; Count] t
         //
@@ -801,8 +802,8 @@ namespace impl // {{{ some command generator helpers
         return ApplyResult::Ok;
     }
 
-    template <typename T>
-    ApplyResult HYPERLINK(Sequence const& _seq, Screen<T>& _screen)
+    template <typename TheTerminal>
+    ApplyResult HYPERLINK(Sequence const& _seq, Screen<TheTerminal>& _screen)
     {
         auto const& value = _seq.intermediateCharacters();
         // hyperlink_OSC ::= OSC '8' ';' params ';' URI
@@ -830,8 +831,8 @@ namespace impl // {{{ some command generator helpers
         return ApplyResult::Ok;
     }
 
-    template <typename T>
-    ApplyResult saveDECModes(Sequence const& _seq, Screen<T>& _screen)
+    template <typename TheTerminal>
+    ApplyResult saveDECModes(Sequence const& _seq, Screen<TheTerminal>& _screen)
     {
         vector<DECMode> modes;
         for (size_t i = 0; i < _seq.parameterCount(); ++i)
@@ -841,8 +842,8 @@ namespace impl // {{{ some command generator helpers
         return ApplyResult::Ok;
     }
 
-    template <typename T>
-    ApplyResult restoreDECModes(Sequence const& _seq, Screen<T>& _screen)
+    template <typename TheTerminal>
+    ApplyResult restoreDECModes(Sequence const& _seq, Screen<TheTerminal>& _screen)
     {
         vector<DECMode> modes;
         for (size_t i = 0; i < _seq.parameterCount(); ++i)
@@ -852,8 +853,8 @@ namespace impl // {{{ some command generator helpers
         return ApplyResult::Ok;
     }
 
-    template <typename T>
-    ApplyResult WINDOWMANIP(Sequence const& _seq, Screen<T>& _screen)
+    template <typename TheTerminal>
+    ApplyResult WINDOWMANIP(Sequence const& _seq, Screen<TheTerminal>& _screen)
     {
         if (_seq.parameterCount() == 3)
         {
@@ -900,8 +901,8 @@ namespace impl // {{{ some command generator helpers
             return ApplyResult::Unsupported;
     }
 
-    template <typename T>
-    ApplyResult XTSMGRAPHICS(Sequence const& _seq, Screen<T>& _screen)
+    template <typename TheTerminal>
+    ApplyResult XTSMGRAPHICS(Sequence const& _seq, Screen<TheTerminal>& _screen)
     {
         auto const Pi = _seq.param<unsigned>(0);
         auto const Pa = _seq.param<unsigned>(1);
@@ -958,20 +959,20 @@ namespace impl // {{{ some command generator helpers
     }
 } // namespace impl
 
-template <typename T>
-Sequencer<T>::Sequencer(Screen<T>& _screen,
-                        ImageSize _maxImageSize,
-                        RGBAColor _backgroundColor,
-                        shared_ptr<SixelColorPalette> _imageColorPalette):
-    screen_ { _screen },
+template <typename TheTerminal>
+Sequencer<TheTerminal>::Sequencer(TheTerminal& _terminal,
+                                  ImageSize _maxImageSize,
+                                  RGBAColor _backgroundColor,
+                                  shared_ptr<SixelColorPalette> _imageColorPalette):
+    terminal_ { _terminal },
     imageColorPalette_ { std::move(_imageColorPalette) },
     maxImageSize_ { _maxImageSize },
     backgroundColor_ { _backgroundColor }
 {
 }
 
-template <typename T>
-void Sequencer<T>::error(std::string_view _errorString)
+template <typename TheTerminal>
+void Sequencer<TheTerminal>::error(std::string_view _errorString)
 {
     if (!VTParserLog)
         return;
@@ -979,8 +980,8 @@ void Sequencer<T>::error(std::string_view _errorString)
     LOGSTORE(VTParserLog)("Parser error: {}", _errorString);
 }
 
-template <typename T>
-void Sequencer<T>::print(char _char)
+template <typename TheTerminal>
+void Sequencer<TheTerminal>::print(char _char)
 {
     unicode::ConvertResult const r = unicode::from_utf8(utf8DecoderState_, _char);
     if (holds_alternative<unicode::Incomplete>(r))
@@ -991,19 +992,19 @@ void Sequencer<T>::print(char _char)
     instructionCounter_++;
     auto const codepoint =
         holds_alternative<unicode::Success>(r) ? get<unicode::Success>(r).value : ReplacementCharacter;
-    screen_.writeText(codepoint);
+    screen().writeText(codepoint);
     precedingGraphicCharacter_ = codepoint;
 }
 
-template <typename T>
-void Sequencer<T>::print(string_view _chars)
+template <typename TheTerminal>
+void Sequencer<TheTerminal>::print(string_view _chars)
 {
     assert(_chars.size() != 0);
 
     if (utf8DecoderState_.expectedLength == 0)
     {
         instructionCounter_ += _chars.size();
-        screen_.writeText(_chars);
+        screen().writeText(_chars);
         precedingGraphicCharacter_ = _chars.back();
     }
     else
@@ -1011,34 +1012,34 @@ void Sequencer<T>::print(string_view _chars)
             print(ch);
 }
 
-template <typename T>
-void Sequencer<T>::execute(char _controlCode)
+template <typename TheTerminal>
+void Sequencer<TheTerminal>::execute(char _controlCode)
 {
     executeControlFunction(_controlCode);
     utf8DecoderState_ = {};
 }
 
-template <typename T>
-void Sequencer<T>::clear()
+template <typename TheTerminal>
+void Sequencer<TheTerminal>::clear()
 {
     sequence_.clear();
     utf8DecoderState_ = {};
 }
 
-template <typename T>
-void Sequencer<T>::collect(char _char)
+template <typename TheTerminal>
+void Sequencer<TheTerminal>::collect(char _char)
 {
     sequence_.intermediateCharacters().push_back(_char);
 }
 
-template <typename T>
-void Sequencer<T>::collectLeader(char _leader)
+template <typename TheTerminal>
+void Sequencer<TheTerminal>::collectLeader(char _leader)
 {
     sequence_.setLeader(_leader);
 }
 
-template <typename T>
-void Sequencer<T>::param(char _char)
+template <typename TheTerminal>
+void Sequencer<TheTerminal>::param(char _char)
 {
     if (sequence_.parameters().empty())
         sequence_.parameters().push_back({ 0 });
@@ -1068,37 +1069,37 @@ void Sequencer<T>::param(char _char)
     }
 }
 
-template <typename T>
-void Sequencer<T>::dispatchESC(char _finalChar)
+template <typename TheTerminal>
+void Sequencer<TheTerminal>::dispatchESC(char _finalChar)
 {
     sequence_.setCategory(FunctionCategory::ESC);
     sequence_.setFinalChar(_finalChar);
     handleSequence();
 }
 
-template <typename T>
-void Sequencer<T>::dispatchCSI(char _finalChar)
+template <typename TheTerminal>
+void Sequencer<TheTerminal>::dispatchCSI(char _finalChar)
 {
     sequence_.setCategory(FunctionCategory::CSI);
     sequence_.setFinalChar(_finalChar);
     handleSequence();
 }
 
-template <typename T>
-void Sequencer<T>::startOSC()
+template <typename TheTerminal>
+void Sequencer<TheTerminal>::startOSC()
 {
     sequence_.setCategory(FunctionCategory::OSC);
 }
 
-template <typename T>
-void Sequencer<T>::putOSC(char _char)
+template <typename TheTerminal>
+void Sequencer<TheTerminal>::putOSC(char _char)
 {
     if (sequence_.intermediateCharacters().size() + 1 < Sequence::MaxOscLength)
         sequence_.intermediateCharacters().push_back(_char);
 }
 
-template <typename T>
-void Sequencer<T>::dispatchOSC()
+template <typename TheTerminal>
+void Sequencer<TheTerminal>::dispatchOSC()
 {
     auto const [code, skipCount] = parseOSC(sequence_.intermediateCharacters());
     sequence_.parameters().push_back({ static_cast<Sequence::Parameter>(code) });
@@ -1107,8 +1108,8 @@ void Sequencer<T>::dispatchOSC()
     clear();
 }
 
-template <typename T>
-void Sequencer<T>::hook(char _finalChar)
+template <typename TheTerminal>
+void Sequencer<TheTerminal>::hook(char _finalChar)
 {
     instructionCounter_++;
     sequence_.setCategory(FunctionCategory::DCS);
@@ -1134,15 +1135,15 @@ void Sequencer<T>::hook(char _finalChar)
     }
 }
 
-template <typename T>
-void Sequencer<T>::put(char _char)
+template <typename TheTerminal>
+void Sequencer<TheTerminal>::put(char _char)
 {
     if (hookedParser_)
         hookedParser_->pass(_char);
 }
 
-template <typename T>
-void Sequencer<T>::unhook()
+template <typename TheTerminal>
+void Sequencer<TheTerminal>::unhook()
 {
     if (hookedParser_)
     {
@@ -1151,8 +1152,8 @@ void Sequencer<T>::unhook()
     }
 }
 
-template <typename T>
-unique_ptr<ParserExtension> Sequencer<T>::hookSixel(Sequence const& _seq)
+template <typename TheTerminal>
+unique_ptr<ParserExtension> Sequencer<TheTerminal>::hookSixel(Sequence const& _seq)
 {
     auto const Pa = _seq.param_or(0, 1);
     auto const Pb = _seq.param_or(1, 2);
@@ -1188,21 +1189,21 @@ unique_ptr<ParserExtension> Sequencer<T>::hookSixel(Sequence const& _seq)
 
     return make_unique<SixelParser>(*sixelImageBuilder_, [this]() {
         {
-            screen_.sixelImage(sixelImageBuilder_->size(), move(sixelImageBuilder_->data()));
+            screen().sixelImage(sixelImageBuilder_->size(), move(sixelImageBuilder_->data()));
         }
     });
 }
 
-template <typename T>
-unique_ptr<ParserExtension> Sequencer<T>::hookSTP(Sequence const& /*_seq*/)
+template <typename TheTerminal>
+unique_ptr<ParserExtension> Sequencer<TheTerminal>::hookSTP(Sequence const& /*_seq*/)
 {
     return make_unique<SimpleStringCollector>([this](string_view const& _data) {
-        screen_.eventListener().setTerminalProfile(unicode::convert_to<char>(_data));
+        screen().eventListener().setTerminalProfile(unicode::convert_to<char>(_data));
     });
 }
 
-template <typename T>
-unique_ptr<ParserExtension> Sequencer<T>::hookXTGETTCAP(Sequence const& /*_seq*/)
+template <typename TheTerminal>
+unique_ptr<ParserExtension> Sequencer<TheTerminal>::hookXTGETTCAP(Sequence const& /*_seq*/)
 {
     // DCS + q Pt ST
     //           Request Termcap/Terminfo String (XTGETTCAP), xterm.  The
@@ -1234,13 +1235,13 @@ unique_ptr<ParserExtension> Sequencer<T>::hookXTGETTCAP(Sequence const& /*_seq*/
         {
             string const hexCap8 = unicode::convert_to<char>(hexCap);
             if (auto const capOpt = crispy::fromHexString(string_view(hexCap8.data(), hexCap8.size())))
-                screen_.requestCapability(capOpt.value());
+                screen().requestCapability(capOpt.value());
         }
     });
 }
 
-template <typename T>
-unique_ptr<ParserExtension> Sequencer<T>::hookDECRQSS(Sequence const& /*_seq*/)
+template <typename TheTerminal>
+unique_ptr<ParserExtension> Sequencer<TheTerminal>::hookDECRQSS(Sequence const& /*_seq*/)
 {
     return make_unique<SimpleStringCollector>([this](string_view const& _data) {
         auto const s = [](string_view _dataString) -> optional<RequestStatusString> {
@@ -1258,14 +1259,14 @@ unique_ptr<ParserExtension> Sequencer<T>::hookDECRQSS(Sequence const& /*_seq*/)
         }(_data);
 
         if (s.has_value())
-            screen_.requestStatusString(s.value());
+            screen().requestStatusString(s.value());
 
         // TODO: handle batching
     });
 }
 
-template <typename T>
-void Sequencer<T>::executeControlFunction(char _c0)
+template <typename TheTerminal>
+void Sequencer<TheTerminal>::executeControlFunction(char _c0)
 {
 #if defined(LIBTERMINAL_LOG_TRACE)
     if (VTParserTraceLog)
@@ -1276,27 +1277,27 @@ void Sequencer<T>::executeControlFunction(char _c0)
     switch (_c0)
     {
     case 0x07: // BEL
-        screen_.eventListener().bell();
+        screen().eventListener().bell();
         break;
     case 0x08: // BS
-        screen_.backspace();
+        screen().backspace();
         break;
     case 0x09: // TAB
-        screen_.moveCursorToNextTab();
+        screen().moveCursorToNextTab();
         break;
     case 0x0A: // LF
-        screen_.linefeed();
+        screen().linefeed();
         break;
     case 0x0B: // VT
         // Even though VT means Vertical Tab, it seems that xterm is doing an IND instead.
         [[fallthrough]];
     case 0x0C: // FF
         // Even though FF means Form Feed, it seems that xterm is doing an IND instead.
-        screen_.index();
+        screen().index();
         break;
-    case 0x0D: screen_.moveCursorToBeginOfLine(); break;
-    case 0x37: screen_.saveCursor(); break;
-    case 0x38: screen_.restoreCursor(); break;
+    case 0x0D: screen().moveCursorToBeginOfLine(); break;
+    case 0x37: screen().saveCursor(); break;
+    case 0x38: screen().restoreCursor(); break;
     default:
         if (VTParserLog)
             LOGSTORE(VTParserLog)("Unsupported C0 sequence: {}", crispy::escape(_c0));
@@ -1304,8 +1305,8 @@ void Sequencer<T>::executeControlFunction(char _c0)
     }
 }
 
-template <typename T>
-void Sequencer<T>::handleSequence()
+template <typename TheTerminal>
+void Sequencer<TheTerminal>::handleSequence()
 {
 #if defined(LIBTERMINAL_LOG_TRACE)
     if (VTParserTraceLog)
@@ -1318,14 +1319,14 @@ void Sequencer<T>::handleSequence()
     if (FunctionDefinition const* funcSpec = sequence_.functionDefinition(); funcSpec != nullptr)
     {
         applyAndLog(*funcSpec, sequence_);
-        screen_.verifyState();
+        screen().verifyState();
     }
     else if (VTParserLog)
         LOGSTORE(VTParserLog)("Unknown VT sequence: {}", sequence_);
 }
 
-template <typename T>
-void Sequencer<T>::applyAndLog(FunctionDefinition const& _function, Sequence const& _seq)
+template <typename TheTerminal>
+void Sequencer<TheTerminal>::applyAndLog(FunctionDefinition const& _function, Sequence const& _seq)
 {
     auto const result = apply(_function, _seq);
     switch (result)
@@ -1337,73 +1338,73 @@ void Sequencer<T>::applyAndLog(FunctionDefinition const& _function, Sequence con
 }
 
 /// Applies a FunctionDefinition to a given context, emitting the respective command.
-template <typename T>
-ApplyResult Sequencer<T>::apply(FunctionDefinition const& _function, Sequence const& _seq)
+template <typename TheTerminal>
+ApplyResult Sequencer<TheTerminal>::apply(FunctionDefinition const& _function, Sequence const& _seq)
 {
     // This function assumed that the incoming instruction has been already resolved to a given
     // FunctionDefinition
     switch (_function)
     {
     // C0
-    case BEL: screen_.eventListener().bell(); break;
-    case BS: screen_.backspace(); break;
-    case TAB: screen_.moveCursorToNextTab(); break;
-    case LF: screen_.linefeed(); break;
+    case BEL: screen().eventListener().bell(); break;
+    case BS: screen().backspace(); break;
+    case TAB: screen().moveCursorToNextTab(); break;
+    case LF: screen().linefeed(); break;
     case VT: [[fallthrough]];
-    case FF: screen_.index(); break;
-    case CR: screen_.moveCursorToBeginOfLine(); break;
+    case FF: screen().index(); break;
+    case CR: screen().moveCursorToBeginOfLine(); break;
 
     // ESC
-    case SCS_G0_SPECIAL: screen_.designateCharset(CharsetTable::G0, CharsetId::Special); break;
-    case SCS_G0_USASCII: screen_.designateCharset(CharsetTable::G0, CharsetId::USASCII); break;
-    case SCS_G1_SPECIAL: screen_.designateCharset(CharsetTable::G1, CharsetId::Special); break;
-    case SCS_G1_USASCII: screen_.designateCharset(CharsetTable::G1, CharsetId::USASCII); break;
-    case DECALN: screen_.screenAlignmentPattern(); break;
-    case DECBI: screen_.backIndex(); break;
-    case DECFI: screen_.forwardIndex(); break;
-    case DECKPAM: screen_.applicationKeypadMode(true); break;
-    case DECKPNM: screen_.applicationKeypadMode(false); break;
-    case DECRS: screen_.restoreCursor(); break;
-    case DECSC: screen_.saveCursor(); break;
-    case HTS: screen_.horizontalTabSet(); break;
-    case IND: screen_.index(); break;
-    case NEL: screen_.moveCursorToNextLine(LineCount(1)); break;
-    case RI: screen_.reverseIndex(); break;
-    case RIS: screen_.resetHard(); break;
-    case SS2: screen_.singleShiftSelect(CharsetTable::G2); break;
-    case SS3: screen_.singleShiftSelect(CharsetTable::G3); break;
+    case SCS_G0_SPECIAL: screen().designateCharset(CharsetTable::G0, CharsetId::Special); break;
+    case SCS_G0_USASCII: screen().designateCharset(CharsetTable::G0, CharsetId::USASCII); break;
+    case SCS_G1_SPECIAL: screen().designateCharset(CharsetTable::G1, CharsetId::Special); break;
+    case SCS_G1_USASCII: screen().designateCharset(CharsetTable::G1, CharsetId::USASCII); break;
+    case DECALN: screen().screenAlignmentPattern(); break;
+    case DECBI: screen().backIndex(); break;
+    case DECFI: screen().forwardIndex(); break;
+    case DECKPAM: screen().applicationKeypadMode(true); break;
+    case DECKPNM: screen().applicationKeypadMode(false); break;
+    case DECRS: screen().restoreCursor(); break;
+    case DECSC: screen().saveCursor(); break;
+    case HTS: screen().horizontalTabSet(); break;
+    case IND: screen().index(); break;
+    case NEL: screen().moveCursorToNextLine(LineCount(1)); break;
+    case RI: screen().reverseIndex(); break;
+    case RIS: screen().resetHard(); break;
+    case SS2: screen().singleShiftSelect(CharsetTable::G2); break;
+    case SS3: screen().singleShiftSelect(CharsetTable::G3); break;
 
     // CSI
-    case ANSISYSSC: screen_.restoreCursor(); break;
-    case CBT: screen_.cursorBackwardTab(TabStopCount(_seq.param_or(0, Sequence::Parameter { 1 }))); break;
-    case CHA: screen_.moveCursorToColumn(_seq.param_or<ColumnOffset>(0, ColumnOffset { 1 }) - 1); break;
-    case CHT: screen_.cursorForwardTab(TabStopCount(_seq.param_or(0, Sequence::Parameter { 1 }))); break;
-    case CNL: screen_.moveCursorToNextLine(LineCount(_seq.param_or(0, Sequence::Parameter { 1 }))); break;
-    case CPL: screen_.moveCursorToPrevLine(LineCount(_seq.param_or(0, Sequence::Parameter { 1 }))); break;
-    case CPR: return impl::CPR(_seq, screen_);
-    case CUB: screen_.moveCursorBackward(_seq.param_or<ColumnCount>(0, ColumnCount { 1 })); break;
-    case CUD: screen_.moveCursorDown(_seq.param_or<LineCount>(0, LineCount { 1 })); break;
-    case CUF: screen_.moveCursorForward(_seq.param_or<ColumnCount>(0, ColumnCount { 1 })); break;
+    case ANSISYSSC: screen().restoreCursor(); break;
+    case CBT: screen().cursorBackwardTab(TabStopCount(_seq.param_or(0, Sequence::Parameter { 1 }))); break;
+    case CHA: screen().moveCursorToColumn(_seq.param_or<ColumnOffset>(0, ColumnOffset { 1 }) - 1); break;
+    case CHT: screen().cursorForwardTab(TabStopCount(_seq.param_or(0, Sequence::Parameter { 1 }))); break;
+    case CNL: screen().moveCursorToNextLine(LineCount(_seq.param_or(0, Sequence::Parameter { 1 }))); break;
+    case CPL: screen().moveCursorToPrevLine(LineCount(_seq.param_or(0, Sequence::Parameter { 1 }))); break;
+    case CPR: return impl::CPR(_seq, screen());
+    case CUB: screen().moveCursorBackward(_seq.param_or<ColumnCount>(0, ColumnCount { 1 })); break;
+    case CUD: screen().moveCursorDown(_seq.param_or<LineCount>(0, LineCount { 1 })); break;
+    case CUF: screen().moveCursorForward(_seq.param_or<ColumnCount>(0, ColumnCount { 1 })); break;
     case CUP:
-        screen_.moveCursorTo(LineOffset::cast_from(_seq.param_or<int>(0, 1) - 1),
+        screen().moveCursorTo(LineOffset::cast_from(_seq.param_or<int>(0, 1) - 1),
                              ColumnOffset::cast_from(_seq.param_or<int>(1, 1) - 1));
         break;
-    case CUU: screen_.moveCursorUp(_seq.param_or<LineCount>(0, LineCount { 1 })); break;
-    case DA1: screen_.sendDeviceAttributes(); break;
-    case DA2: screen_.sendTerminalId(); break;
+    case CUU: screen().moveCursorUp(_seq.param_or<LineCount>(0, LineCount { 1 })); break;
+    case DA1: screen().sendDeviceAttributes(); break;
+    case DA2: screen().sendTerminalId(); break;
     case DA3:
         // terminal identification, 4 hex codes
-        screen_.reply("\033P!|C0000000\033\\");
+        screen().reply("\033P!|C0000000\033\\");
         break;
-    case DCH: screen_.deleteCharacters(_seq.param_or<ColumnCount>(0, ColumnCount { 1 })); break;
+    case DCH: screen().deleteCharacters(_seq.param_or<ColumnCount>(0, ColumnCount { 1 })); break;
     case DECCRA: {
         // The coordinates of the rectangular area are affected by the setting of origin mode (DECOM).
         // DECCRA is not affected by the page margins.
-        auto const origin = screen_.origin();
+        auto const origin = screen().origin();
         auto const top = Top(_seq.param_or(0, *origin.line + 1) - 1);
         auto const left = Left(_seq.param_or(1, *origin.column + 1) - 1);
-        auto const bottom = Bottom(_seq.param_or(2, *screen_.pageSize().lines) - 1);
-        auto const right = Right(_seq.param_or(3, *screen_.pageSize().columns) - 1);
+        auto const bottom = Bottom(_seq.param_or(2, *screen().pageSize().lines) - 1);
+        auto const right = Right(_seq.param_or(3, *screen().pageSize().columns) - 1);
         auto const page = _seq.param_or(4, 0);
 
         auto const targetTop = LineOffset(_seq.param_or(5, *origin.line + 1) - 1);
@@ -1411,46 +1412,46 @@ ApplyResult Sequencer<T>::apply(FunctionDefinition const& _function, Sequence co
         auto const targetTopLeft = CellLocation { targetTop, targetLeft };
         auto const targetPage = _seq.param_or(7, 0);
 
-        screen_.copyArea(Rect { top, left, bottom, right }, page, targetTopLeft, targetPage);
+        screen().copyArea(Rect { top, left, bottom, right }, page, targetTopLeft, targetPage);
     }
     break;
     case DECERA: {
         // The coordinates of the rectangular area are affected by the setting of origin mode (DECOM).
-        auto const origin = screen_.origin();
+        auto const origin = screen().origin();
         auto const top = _seq.param_or(0, *origin.line + 1) - 1;
         auto const left = _seq.param_or(1, *origin.column + 1) - 1;
 
         // If the value of Pt, Pl, Pb, or Pr exceeds the width or height of the active page, then the value is
         // treated as the width or height of that page.
-        auto const size = screen_.pageSize();
+        auto const size = screen().pageSize();
         auto const bottom = min(_seq.param_or(2, unbox<int>(size.lines)), unbox<int>(size.lines)) - 1;
         auto const right = min(_seq.param_or(3, unbox<int>(size.columns)), unbox<int>(size.columns)) - 1;
 
-        screen_.eraseArea(top, left, bottom, right);
+        screen().eraseArea(top, left, bottom, right);
     }
     break;
     case DECFRA: {
         auto const ch = _seq.param_or(0, Sequence::Parameter { 0 });
         // The coordinates of the rectangular area are affected by the setting of origin mode (DECOM).
-        auto const origin = screen_.origin();
+        auto const origin = screen().origin();
         auto const top = _seq.param_or(0, origin.line);
         auto const left = _seq.param_or(1, origin.column);
 
         // If the value of Pt, Pl, Pb, or Pr exceeds the width or height of the active page, then the value is
         // treated as the width or height of that page.
-        auto const size = screen_.pageSize();
+        auto const size = screen().pageSize();
         auto const bottom = min(_seq.param_or(2, *size.lines), *size.lines);
         auto const right = min(_seq.param_or(3, *size.columns), *size.columns);
 
-        screen_.fillArea(ch, *top, *left, bottom, right);
+        screen().fillArea(ch, *top, *left, bottom, right);
     }
     break;
-    case DECDC: screen_.deleteColumns(_seq.param_or(0, ColumnCount(1))); break;
-    case DECIC: screen_.insertColumns(_seq.param_or(0, ColumnCount(1))); break;
+    case DECDC: screen().deleteColumns(_seq.param_or(0, ColumnCount(1))); break;
+    case DECIC: screen().insertColumns(_seq.param_or(0, ColumnCount(1))); break;
     case DECRM: {
         ApplyResult r = ApplyResult::Ok;
         crispy::for_each(crispy::times(_seq.parameterCount()), [&](size_t i) {
-            auto const t = impl::setModeDEC(_seq, i, false, screen_);
+            auto const t = impl::setModeDEC(_seq, i, false, screen());
             r = max(r, t);
         });
         return r;
@@ -1459,136 +1460,136 @@ ApplyResult Sequencer<T>::apply(FunctionDefinition const& _function, Sequence co
     case DECRQM:
         if (_seq.parameterCount() != 1)
             return ApplyResult::Invalid;
-        screen_.requestDECMode(_seq.param(0));
+        screen().requestDECMode(_seq.param(0));
         return ApplyResult::Ok;
     case DECRQM_ANSI:
         if (_seq.parameterCount() != 1)
             return ApplyResult::Invalid;
-        screen_.requestAnsiMode(_seq.param(0));
+        screen().requestAnsiMode(_seq.param(0));
         return ApplyResult::Ok;
-    case DECRQPSR: return impl::DECRQPSR(_seq, screen_);
-    case DECSCUSR: return impl::DECSCUSR(_seq, screen_);
+    case DECRQPSR: return impl::DECRQPSR(_seq, screen());
+    case DECSCUSR: return impl::DECSCUSR(_seq, screen());
     case DECSCPP:
         if (auto const columnCount = _seq.param_or(0, 80); columnCount == 80 || columnCount == 132)
         {
             // EXTENSION: only 80 and 132 are specced, but we allow any.
-            screen_.resizeColumns(ColumnCount(columnCount), false);
+            screen().resizeColumns(ColumnCount(columnCount), false);
             return ApplyResult::Ok;
         }
         else
             return ApplyResult::Invalid;
     case DECSNLS:
-        screen_.resize(PageSize { screen_.pageSize().lines, _seq.param<ColumnCount>(0) });
+        screen().resize(PageSize { screen().pageSize().lines, _seq.param<ColumnCount>(0) });
         return ApplyResult::Ok;
     case DECSLRM: {
         auto l = decr(_seq.param_opt<ColumnOffset>(0));
         auto r = decr(_seq.param_opt<ColumnOffset>(1));
-        screen_.setLeftRightMargin(l, r);
+        screen().setLeftRightMargin(l, r);
     }
     break;
     case DECSM: {
         ApplyResult r = ApplyResult::Ok;
         crispy::for_each(crispy::times(_seq.parameterCount()), [&](size_t i) {
-            auto const t = impl::setModeDEC(_seq, i, true, screen_);
+            auto const t = impl::setModeDEC(_seq, i, true, screen());
             r = max(r, t);
         });
         return r;
     }
     case DECSTBM:
-        screen_.setTopBottomMargin(decr(_seq.param_opt<LineOffset>(0)), decr(_seq.param_opt<LineOffset>(1)));
+        screen().setTopBottomMargin(decr(_seq.param_opt<LineOffset>(0)), decr(_seq.param_opt<LineOffset>(1)));
         break;
-    case DECSTR: screen_.resetSoft(); break;
-    case DECXCPR: screen_.reportExtendedCursorPosition(); break;
-    case DL: screen_.deleteLines(_seq.param_or(0, LineCount(1))); break;
-    case ECH: screen_.eraseCharacters(_seq.param_or(0, ColumnCount(1))); break;
-    case ED: return impl::ED(_seq, screen_);
-    case EL: return impl::EL(_seq, screen_);
-    case HPA: screen_.moveCursorToColumn(_seq.param<ColumnOffset>(0) - 1); break;
-    case HPR: screen_.moveCursorForward(_seq.param<ColumnCount>(0)); break;
+    case DECSTR: screen().resetSoft(); break;
+    case DECXCPR: screen().reportExtendedCursorPosition(); break;
+    case DL: screen().deleteLines(_seq.param_or(0, LineCount(1))); break;
+    case ECH: screen().eraseCharacters(_seq.param_or(0, ColumnCount(1))); break;
+    case ED: return impl::ED(_seq, screen());
+    case EL: return impl::EL(_seq, screen());
+    case HPA: screen().moveCursorToColumn(_seq.param<ColumnOffset>(0) - 1); break;
+    case HPR: screen().moveCursorForward(_seq.param<ColumnCount>(0)); break;
     case HVP:
-        screen_.moveCursorTo(_seq.param_or(0, LineOffset(1)) - 1, _seq.param_or(1, ColumnOffset(1)) - 1);
+        screen().moveCursorTo(_seq.param_or(0, LineOffset(1)) - 1, _seq.param_or(1, ColumnOffset(1)) - 1);
         break; // YES, it's like a CUP!
-    case ICH: screen_.insertCharacters(_seq.param_or(0, ColumnCount { 1 })); break;
-    case IL: screen_.insertLines(_seq.param_or(0, LineCount { 1 })); break;
+    case ICH: screen().insertCharacters(_seq.param_or(0, ColumnCount { 1 })); break;
+    case IL: screen().insertLines(_seq.param_or(0, LineCount { 1 })); break;
     case REP:
         if (precedingGraphicCharacter_)
         {
             auto const requestedCount = _seq.param<size_t>(0);
             auto const availableColumns =
-                (screen_.margin().horizontal.to - screen_.cursor().position.column).template as<size_t>();
+                (screen().margin().horizontal.to - screen().cursor().position.column).template as<size_t>();
             auto const effectiveCount = min(requestedCount, availableColumns);
             for (size_t i = 0; i < effectiveCount; i++)
-                screen_.writeText(precedingGraphicCharacter_);
+                screen().writeText(precedingGraphicCharacter_);
         }
         break;
     case RM: {
         ApplyResult r = ApplyResult::Ok;
         crispy::for_each(crispy::times(_seq.parameterCount()), [&](size_t i) {
-            auto const t = impl::setAnsiMode(_seq, i, false, screen_);
+            auto const t = impl::setAnsiMode(_seq, i, false, screen());
             r = max(r, t);
         });
         return r;
     }
     break;
-    case SCOSC: screen_.saveCursor(); break;
-    case SD: screen_.scrollDown(_seq.param_or<LineCount>(0, LineCount { 1 })); break;
-    case SETMARK: screen_.setMark(); break;
-    case SGR: return impl::dispatchSGR(_seq, screen_);
+    case SCOSC: screen().saveCursor(); break;
+    case SD: screen().scrollDown(_seq.param_or<LineCount>(0, LineCount { 1 })); break;
+    case SETMARK: screen().setMark(); break;
+    case SGR: return impl::dispatchSGR(_seq, screen());
     case SM: {
         ApplyResult r = ApplyResult::Ok;
         crispy::for_each(crispy::times(_seq.parameterCount()), [&](size_t i) {
-            auto const t = impl::setAnsiMode(_seq, i, true, screen_);
+            auto const t = impl::setAnsiMode(_seq, i, true, screen());
             r = max(r, t);
         });
         return r;
     }
-    case SU: screen_.scrollUp(_seq.param_or<LineCount>(0, LineCount(1))); break;
-    case TBC: return impl::TBC(_seq, screen_);
-    case VPA: screen_.moveCursorToLine(_seq.param_or<LineOffset>(0, LineOffset { 1 }) - 1); break;
-    case WINMANIP: return impl::WINDOWMANIP(_seq, screen_);
-    case DECMODERESTORE: return impl::restoreDECModes(_seq, screen_);
-    case DECMODESAVE: return impl::saveDECModes(_seq, screen_);
-    case XTSMGRAPHICS: return impl::XTSMGRAPHICS(_seq, screen_);
+    case SU: screen().scrollUp(_seq.param_or<LineCount>(0, LineCount(1))); break;
+    case TBC: return impl::TBC(_seq, screen());
+    case VPA: screen().moveCursorToLine(_seq.param_or<LineOffset>(0, LineOffset { 1 }) - 1); break;
+    case WINMANIP: return impl::WINDOWMANIP(_seq, screen());
+    case DECMODERESTORE: return impl::restoreDECModes(_seq, screen());
+    case DECMODESAVE: return impl::saveDECModes(_seq, screen());
+    case XTSMGRAPHICS: return impl::XTSMGRAPHICS(_seq, screen());
     case XTVERSION:
-        screen_.reply(fmt::format("\033P>|{} {}\033\\", LIBTERMINAL_NAME, LIBTERMINAL_VERSION_STRING));
+        screen().reply(fmt::format("\033P>|{} {}\033\\", LIBTERMINAL_NAME, LIBTERMINAL_VERSION_STRING));
         return ApplyResult::Ok;
 
     // OSC
     case SETTITLE:
         //(not supported) ChangeIconTitle(_seq.intermediateCharacters());
-        screen_.setWindowTitle(_seq.intermediateCharacters());
+        screen().setWindowTitle(_seq.intermediateCharacters());
         return ApplyResult::Ok;
     case SETICON: return ApplyResult::Ok; // NB: Silently ignore!
-    case SETWINTITLE: screen_.setWindowTitle(_seq.intermediateCharacters()); break;
+    case SETWINTITLE: screen().setWindowTitle(_seq.intermediateCharacters()); break;
     case SETXPROP: return ApplyResult::Unsupported;
-    case SETCOLPAL: return impl::SETCOLPAL(_seq, screen_);
-    case RCOLPAL: return impl::RCOLPAL(_seq, screen_);
-    case SETCWD: return impl::SETCWD(_seq, screen_);
-    case HYPERLINK: return impl::HYPERLINK(_seq, screen_);
-    case CAPTURE: return impl::CAPTURE(_seq, screen_);
+    case SETCOLPAL: return impl::SETCOLPAL(_seq, screen());
+    case RCOLPAL: return impl::RCOLPAL(_seq, screen());
+    case SETCWD: return impl::SETCWD(_seq, screen());
+    case HYPERLINK: return impl::HYPERLINK(_seq, screen());
+    case CAPTURE: return impl::CAPTURE(_seq, screen());
     case COLORFG:
-        return impl::setOrRequestDynamicColor(_seq, screen_, DynamicColorName::DefaultForegroundColor);
+        return impl::setOrRequestDynamicColor(_seq, screen(), DynamicColorName::DefaultForegroundColor);
     case COLORBG:
-        return impl::setOrRequestDynamicColor(_seq, screen_, DynamicColorName::DefaultBackgroundColor);
-    case COLORCURSOR: return impl::setOrRequestDynamicColor(_seq, screen_, DynamicColorName::TextCursorColor);
+        return impl::setOrRequestDynamicColor(_seq, screen(), DynamicColorName::DefaultBackgroundColor);
+    case COLORCURSOR: return impl::setOrRequestDynamicColor(_seq, screen(), DynamicColorName::TextCursorColor);
     case COLORMOUSEFG:
-        return impl::setOrRequestDynamicColor(_seq, screen_, DynamicColorName::MouseForegroundColor);
+        return impl::setOrRequestDynamicColor(_seq, screen(), DynamicColorName::MouseForegroundColor);
     case COLORMOUSEBG:
-        return impl::setOrRequestDynamicColor(_seq, screen_, DynamicColorName::MouseBackgroundColor);
-    case SETFONT: return impl::setFont(_seq, screen_);
-    case SETFONTALL: return impl::setAllFont(_seq, screen_);
-    case CLIPBOARD: return impl::clipboard(_seq, screen_);
+        return impl::setOrRequestDynamicColor(_seq, screen(), DynamicColorName::MouseBackgroundColor);
+    case SETFONT: return impl::setFont(_seq, screen());
+    case SETFONTALL: return impl::setAllFont(_seq, screen());
+    case CLIPBOARD: return impl::clipboard(_seq, screen());
     // TODO: case COLORSPECIAL: return impl::setOrRequestDynamicColor(_seq, _output,
     // DynamicColorName::HighlightForegroundColor);
-    case RCOLORFG: screen_.resetDynamicColor(DynamicColorName::DefaultForegroundColor); break;
-    case RCOLORBG: screen_.resetDynamicColor(DynamicColorName::DefaultBackgroundColor); break;
-    case RCOLORCURSOR: screen_.resetDynamicColor(DynamicColorName::TextCursorColor); break;
-    case RCOLORMOUSEFG: screen_.resetDynamicColor(DynamicColorName::MouseForegroundColor); break;
-    case RCOLORMOUSEBG: screen_.resetDynamicColor(DynamicColorName::MouseBackgroundColor); break;
-    case RCOLORHIGHLIGHTFG: screen_.resetDynamicColor(DynamicColorName::HighlightForegroundColor); break;
-    case RCOLORHIGHLIGHTBG: screen_.resetDynamicColor(DynamicColorName::HighlightBackgroundColor); break;
-    case NOTIFY: return impl::NOTIFY(_seq, screen_);
-    case DUMPSTATE: screen_.inspect(); break;
+    case RCOLORFG: screen().resetDynamicColor(DynamicColorName::DefaultForegroundColor); break;
+    case RCOLORBG: screen().resetDynamicColor(DynamicColorName::DefaultBackgroundColor); break;
+    case RCOLORCURSOR: screen().resetDynamicColor(DynamicColorName::TextCursorColor); break;
+    case RCOLORMOUSEFG: screen().resetDynamicColor(DynamicColorName::MouseForegroundColor); break;
+    case RCOLORMOUSEBG: screen().resetDynamicColor(DynamicColorName::MouseBackgroundColor); break;
+    case RCOLORHIGHLIGHTFG: screen().resetDynamicColor(DynamicColorName::HighlightForegroundColor); break;
+    case RCOLORHIGHLIGHTBG: screen().resetDynamicColor(DynamicColorName::HighlightBackgroundColor); break;
+    case NOTIFY: return impl::NOTIFY(_seq, screen());
+    case DUMPSTATE: screen().inspect(); break;
     default: return ApplyResult::Unsupported;
     }
     return ApplyResult::Ok;
@@ -1649,28 +1650,6 @@ std::string to_string(DECMode _mode)
     }
     return fmt::format("({})", static_cast<unsigned>(_mode));
 };
-
-// {{{ free function helpers
-CursorShape makeCursorShape(string const& _name)
-{
-    string const name = [](string const& _input) {
-        string output;
-        transform(begin(_input), end(_input), back_inserter(output), [](auto ch) { return tolower(ch); });
-        return output;
-    }(_name);
-
-    if (name == "block")
-        return CursorShape::Block;
-    else if (name == "rectangle")
-        return CursorShape::Rectangle;
-    else if (name == "underscore")
-        return CursorShape::Underscore;
-    else if (name == "bar")
-        return CursorShape::Bar;
-    else
-        throw runtime_error { "Invalid cursor shape." };
-}
-// }}}
 
 } // namespace terminal
 

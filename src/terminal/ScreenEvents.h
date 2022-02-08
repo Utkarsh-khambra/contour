@@ -14,7 +14,6 @@
 #pragma once
 
 #include <terminal/InputGenerator.h>
-#include <terminal/Sequencer.h>
 #include <terminal/primitives.h>
 
 #include <optional>

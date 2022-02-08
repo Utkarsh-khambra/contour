@@ -22,7 +22,7 @@
 namespace terminal
 {
 
-MockTerm::MockTerm(PageSize _size, LineCount _hist): screen(_size, *this, _hist)
+MockTerm::MockTerm(PageSize _size, LineCount _hist): screen_(_size, *this, _hist)
 {
     char const* logFilterString = getenv("LOG");
     if (logFilterString)

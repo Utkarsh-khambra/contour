@@ -16,7 +16,6 @@
 #include <terminal/InputGenerator.h>
 #include <terminal/RenderBuffer.h>
 #include <terminal/ScreenEvents.h>
-#include <terminal/Sequencer.h>
 #include <terminal/Selector.h>
 #include <terminal/TerminalState.h>
 #include <terminal/Viewport.h>
@@ -405,6 +404,7 @@ class Terminal
 
     InputGenerator inputGenerator_;
     LineOffset copyLastMarkRangeOffset_;
+    TerminalState<Terminal> state_;
     Screen<Terminal> screen_;
     std::mutex mutable outerLock_;
     std::mutex mutable innerLock_;

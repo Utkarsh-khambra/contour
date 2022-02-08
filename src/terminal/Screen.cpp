@@ -396,8 +396,7 @@ Screen<EventListener>::Screen(PageSize _pageSize,
                               ColorPalette _colorPalette,
                               bool _allowReflowOnResize):
     eventListener_ { _eventListener },
-    state_ { *this,
-             _eventListener,
+    state_ { _eventListener,
              _pageSize,
              _maxHistoryLineCount,
              _maxImageSize,
@@ -457,7 +456,7 @@ void Screen<T>::resizeColumns(ColumnCount _newColumnCount, bool _clear)
     auto const newSize = PageSize { state_.pageSize.lines, _newColumnCount };
     resize(newSize);
 
-    state_.eventListener.resizeWindow(newSize);
+    eventListener_.resizeWindow(newSize);
 }
 
 template <typename T>
@@ -545,7 +544,7 @@ void Screen<T>::write(std::string_view _data)
     if (state_.modes.enabled(DECMode::BatchedRendering))
         return;
 
-    state_.eventListener.screenUpdated();
+    eventListener_.screenUpdated();
 }
 
 template <typename T>
@@ -556,7 +555,7 @@ void Screen<T>::write(std::u32string_view _data)
     if (state_.modes.enabled(DECMode::BatchedRendering))
         return;
 
-    state_.eventListener.screenUpdated();
+    eventListener_.screenUpdated();
 }
 
 template <typename T>
@@ -688,7 +687,7 @@ void Screen<T>::writeText(string_view _chars)
         // XXX: But even if we keep it but enable the setReportDamage(bool),
         //      then this should still be cheap as it's only invoked when something
         //      is actually selected.
-        // state_.eventListener.markRegionDirty(
+        // eventListener_.markRegionDirty(
         //     state_.cursor.position.line,
         //     state_.cursor.position.column
         // );
@@ -735,7 +734,7 @@ void Screen<T>::writeText(char32_t _char)
         auto const extendedWidth = usePreviousCell().appendCharacter(codepoint);
         if (extendedWidth > 0)
             clearAndAdvance(extendedWidth);
-        state_.eventListener.markCellDirty(state_.lastCursorPosition);
+        eventListener_.markCellDirty(state_.lastCursorPosition);
     }
 
     state_.sequencer.resetInstructionCounter();
@@ -787,7 +786,7 @@ void Screen<T>::writeCharToCurrentAndAdvance(char32_t _character) noexcept
     //       Alternatively we could add a boolean to make this callback
     //       conditional, something like: setReportDamage(bool);
     //       The latter is probably the easiest.
-    state_.eventListener.markCellDirty(state_.cursor.position);
+    eventListener_.markCellDirty(state_.cursor.position);
 }
 
 template <typename T>
@@ -1015,7 +1014,7 @@ void Screen<T>::resetHard()
 
     verifyState();
 
-    state_.eventListener.hardReset();
+    eventListener_.hardReset();
 }
 
 template <typename T>
@@ -1042,14 +1041,14 @@ void Screen<T>::setBuffer(ScreenType _type)
     switch (_type)
     {
     case ScreenType::Main:
-        state_.eventListener.setMouseWheelMode(InputGenerator::MouseWheelMode::Default);
+        eventListener_.setMouseWheelMode(InputGenerator::MouseWheelMode::Default);
         state_.activeGrid = &primaryGrid();
         break;
     case ScreenType::Alternate:
         if (isModeEnabled(DECMode::MouseAlternateScroll))
-            state_.eventListener.setMouseWheelMode(InputGenerator::MouseWheelMode::ApplicationCursorKeys);
+            eventListener_.setMouseWheelMode(InputGenerator::MouseWheelMode::ApplicationCursorKeys);
         else
-            state_.eventListener.setMouseWheelMode(InputGenerator::MouseWheelMode::NormalCursorKeys);
+            eventListener_.setMouseWheelMode(InputGenerator::MouseWheelMode::NormalCursorKeys);
         state_.activeGrid = &alternateGrid();
         break;
     }
@@ -1064,7 +1063,7 @@ void Screen<T>::setBuffer(ScreenType _type)
     // Ensure correct screen buffer size for the buffer we've just switched to.
     applyPageSizeToCurrentBuffer();
 
-    state_.eventListener.bufferChanged(_type);
+    eventListener_.bufferChanged(_type);
 }
 
 template <typename T>
@@ -1097,7 +1096,7 @@ template <typename T>
 void Screen<T>::scrollUp(LineCount n, GraphicsAttributes sgr, Margin margin)
 {
     auto const scrollCount = grid().scrollUp(n, sgr, margin);
-    state_.eventListener.onBufferScrolled(scrollCount);
+    eventListener_.onBufferScrolled(scrollCount);
 }
 
 template <typename T>
@@ -1265,7 +1264,7 @@ void Screen<T>::clearScrollbackBuffer()
 {
     primaryGrid().clearHistory();
     alternateGrid().clearHistory();
-    state_.eventListener.scrollbackBufferCleared();
+    eventListener_.scrollbackBufferCleared();
 }
 
 template <typename T>
@@ -1301,7 +1300,7 @@ void Screen<T>::clearToEndOfLine()
     auto const left = state_.cursor.position.column;
     auto const right = boxed_cast<ColumnOffset>(state_.pageSize.columns - 1);
     auto const area = Rect { Top(*line), Left(*left), Bottom(*line), Right(*right) };
-    state_.eventListener.markRegionDirty(area);
+    eventListener_.markRegionDirty(area);
 }
 
 template <typename T>
@@ -1331,7 +1330,7 @@ void Screen<T>::clearLine()
     auto const left = ColumnOffset(0);
     auto const right = boxed_cast<ColumnOffset>(state_.pageSize.columns - 1);
     auto const area = Rect { Top(*line), Left(*left), Bottom(*line), Right(*right) };
-    state_.eventListener.markRegionDirty(area);
+    eventListener_.markRegionDirty(area);
 }
 
 template <typename T>
@@ -1679,7 +1678,7 @@ template <typename T>
 void Screen<T>::notify(string const& _title, string const& _content)
 {
     std::cout << "Screen.NOTIFY: title: '" << _title << "', content: '" << _content << "'\n";
-    state_.eventListener.notify(_title, _content);
+    eventListener_.notify(_title, _content);
 }
 
 template <typename T>
@@ -1857,7 +1856,7 @@ void Screen<T>::setCursorStyle(CursorDisplay _display, CursorShape _shape)
     state_.cursorDisplay = _display;
     state_.cursorShape = _shape;
 
-    state_.eventListener.setCursorStyle(_display, _shape);
+    eventListener_.setCursorStyle(_display, _shape);
 }
 
 template <typename T>
@@ -1973,7 +1972,7 @@ void Screen<T>::setMode(DECMode _mode, bool _enable)
         break;
     case DECMode::BatchedRendering:
         if (state_.modes.enabled(DECMode::BatchedRendering) != _enable)
-            state_.eventListener.synchronizedOutput(_enable);
+            eventListener_.synchronizedOutput(_enable);
         break;
     case DECMode::TextReflow:
         if (state_.allowReflowOnResize && isPrimaryScreen())
@@ -1998,41 +1997,41 @@ void Screen<T>::setMode(DECMode _mode, bool _enable)
             setBuffer(ScreenType::Main);
         break;
     case DECMode::UseApplicationCursorKeys:
-        state_.eventListener.useApplicationCursorKeys(_enable);
+        eventListener_.useApplicationCursorKeys(_enable);
         if (isAlternateScreen())
         {
             if (_enable)
-                state_.eventListener.setMouseWheelMode(InputGenerator::MouseWheelMode::ApplicationCursorKeys);
+                eventListener_.setMouseWheelMode(InputGenerator::MouseWheelMode::ApplicationCursorKeys);
             else
-                state_.eventListener.setMouseWheelMode(InputGenerator::MouseWheelMode::NormalCursorKeys);
+                eventListener_.setMouseWheelMode(InputGenerator::MouseWheelMode::NormalCursorKeys);
         }
         break;
-    case DECMode::BracketedPaste: state_.eventListener.setBracketedPaste(_enable); break;
+    case DECMode::BracketedPaste: eventListener_.setBracketedPaste(_enable); break;
     case DECMode::MouseSGR:
         if (_enable)
-            state_.eventListener.setMouseTransport(MouseTransport::SGR);
+            eventListener_.setMouseTransport(MouseTransport::SGR);
         else
-            state_.eventListener.setMouseTransport(MouseTransport::Default);
+            eventListener_.setMouseTransport(MouseTransport::Default);
         break;
-    case DECMode::MouseExtended: state_.eventListener.setMouseTransport(MouseTransport::Extended); break;
-    case DECMode::MouseURXVT: state_.eventListener.setMouseTransport(MouseTransport::URXVT); break;
+    case DECMode::MouseExtended: eventListener_.setMouseTransport(MouseTransport::Extended); break;
+    case DECMode::MouseURXVT: eventListener_.setMouseTransport(MouseTransport::URXVT); break;
     case DECMode::MouseSGRPixels:
         if (_enable)
-            state_.eventListener.setMouseTransport(MouseTransport::SGRPixels);
+            eventListener_.setMouseTransport(MouseTransport::SGRPixels);
         else
-            state_.eventListener.setMouseTransport(MouseTransport::Default);
+            eventListener_.setMouseTransport(MouseTransport::Default);
         break;
     case DECMode::MouseAlternateScroll:
         if (_enable)
-            state_.eventListener.setMouseWheelMode(InputGenerator::MouseWheelMode::ApplicationCursorKeys);
+            eventListener_.setMouseWheelMode(InputGenerator::MouseWheelMode::ApplicationCursorKeys);
         else
-            state_.eventListener.setMouseWheelMode(InputGenerator::MouseWheelMode::NormalCursorKeys);
+            eventListener_.setMouseWheelMode(InputGenerator::MouseWheelMode::NormalCursorKeys);
         break;
-    case DECMode::FocusTracking: state_.eventListener.setGenerateFocusEvents(_enable); break;
+    case DECMode::FocusTracking: eventListener_.setGenerateFocusEvents(_enable); break;
     case DECMode::UsePrivateColorRegisters: state_.sequencer.setUsePrivateColorRegisters(_enable); break;
     case DECMode::VisibleCursor:
         state_.cursor.visible = _enable;
-        state_.eventListener.setCursorVisibility(_enable);
+        eventListener_.setCursorVisibility(_enable);
         break;
     case DECMode::MouseProtocolX10: sendMouseEvents(MouseProtocol::X10, _enable); break;
     case DECMode::MouseProtocolNormalTracking: sendMouseEvents(MouseProtocol::NormalTracking, _enable); break;
@@ -2161,13 +2160,13 @@ void Screen<T>::screenAlignmentPattern()
 template <typename T>
 void Screen<T>::sendMouseEvents(MouseProtocol _protocol, bool _enable)
 {
-    state_.eventListener.setMouseProtocol(_protocol, _enable);
+    eventListener_.setMouseProtocol(_protocol, _enable);
 }
 
 template <typename T>
 void Screen<T>::applicationKeypadMode(bool _enable)
 {
-    state_.eventListener.setApplicationkeypadMode(_enable);
+    eventListener_.setApplicationkeypadMode(_enable);
 }
 
 template <typename T>
@@ -2287,7 +2286,7 @@ template <typename T>
 void Screen<T>::setWindowTitle(std::string const& _title)
 {
     state_.windowTitle = _title;
-    state_.eventListener.setWindowTitle(_title);
+    eventListener_.setWindowTitle(_title);
 }
 
 template <typename T>
@@ -2303,7 +2302,7 @@ void Screen<T>::restoreWindowTitle()
     {
         state_.windowTitle = state_.savedWindowTitles.top();
         state_.savedWindowTitles.pop();
-        state_.eventListener.setWindowTitle(state_.windowTitle);
+        eventListener_.setWindowTitle(state_.windowTitle);
     }
 }
 
@@ -2585,7 +2584,7 @@ void Screen<T>::setDynamicColor(DynamicColorName _name, RGBColor _value)
 template <typename T>
 void Screen<T>::inspect()
 {
-    state_.eventListener.inspect();
+    eventListener_.inspect();
 }
 
 template <typename T>

@@ -72,7 +72,7 @@ namespace terminal
  * allowing the object owner to control which part of the screen (or history)
  * to be viewn.
  */
-template <typename EventListener>
+template <typename TheTerminal>
 class Screen: public capabilities::StaticDatabase // TODO(pr) rename to ScreenBuffer
 {
   public:
@@ -86,9 +86,9 @@ class Screen: public capabilities::StaticDatabase // TODO(pr) rename to ScreenBu
      * @param _maxHistoryLineCount number of lines the history must not exceed.
      */
     Screen(
-        // TerminalState<EventListener> _sharedState,
+        // TerminalState<TheTerminal> _sharedState,
         PageSize _pageSize,
-        EventListener& _eventListener,
+        TheTerminal& _eventListener,
         LineCount _maxHistoryLineCount = LineCount(0),
         ImageSize _maxImageSize = ImageSize { Width(800), Height(600) },
         int _maxImageColorRegisters = 256,
@@ -454,8 +454,8 @@ class Screen: public capabilities::StaticDatabase // TODO(pr) rename to ScreenBu
 
     bool synchronizeOutput() const noexcept { return false; } // TODO
 
-    EventListener& eventListener() noexcept { return state_.eventListener; }
-    EventListener const& eventListener() const noexcept { return state_.eventListener; }
+    TheTerminal& eventListener() noexcept { return state_.eventListener; }
+    TheTerminal const& eventListener() const noexcept { return state_.eventListener; }
 
     void setWindowTitle(std::string const& _title);
     void saveWindowTitle();
@@ -533,82 +533,8 @@ class Screen: public capabilities::StaticDatabase // TODO(pr) rename to ScreenBu
     /// Sets the current column to given logical column number.
     void setCurrentColumn(ColumnOffset _n);
 
-    EventListener& eventListener_;
-    TerminalState<EventListener> state_;
+    TheTerminal& eventListener_;
+    TerminalState<TheTerminal> state_;
 };
 
 } // namespace terminal
-
-namespace fmt // {{{
-{
-template <>
-struct formatter<terminal::Margin::Horizontal>
-{
-    template <typename ParseContext>
-    constexpr auto parse(ParseContext& ctx)
-    {
-        return ctx.begin();
-    }
-    template <typename FormatContext>
-    auto format(const terminal::Margin::Horizontal range, FormatContext& ctx)
-    {
-        return format_to(ctx.out(), "{}..{}", range.from, range.to);
-    }
-};
-
-template <>
-struct formatter<terminal::Margin::Vertical>
-{
-    template <typename ParseContext>
-    constexpr auto parse(ParseContext& ctx)
-    {
-        return ctx.begin();
-    }
-    template <typename FormatContext>
-    auto format(const terminal::Margin::Vertical range, FormatContext& ctx)
-    {
-        return format_to(ctx.out(), "{}..{}", range.from, range.to);
-    }
-};
-
-template <>
-struct formatter<terminal::Cursor>
-{
-    template <typename ParseContext>
-    constexpr auto parse(ParseContext& ctx)
-    {
-        return ctx.begin();
-    }
-    template <typename FormatContext>
-    auto format(const terminal::Cursor cursor, FormatContext& ctx)
-    {
-        return format_to(ctx.out(),
-                         "({}:{}{})",
-                         cursor.position.line,
-                         cursor.position.column,
-                         cursor.visible ? "" : ", (invis)");
-    }
-};
-
-template <>
-struct formatter<terminal::ScreenType>
-{
-    template <typename ParseContext>
-    constexpr auto parse(ParseContext& ctx)
-    {
-        return ctx.begin();
-    }
-
-    template <typename FormatContext>
-    auto format(const terminal::ScreenType value, FormatContext& ctx)
-    {
-        switch (value)
-        {
-        case terminal::ScreenType::Main: return format_to(ctx.out(), "main");
-        case terminal::ScreenType::Alternate: return format_to(ctx.out(), "alternate");
-        }
-        return format_to(ctx.out(), "({})", static_cast<unsigned>(value));
-    }
-};
-
-} // namespace fmt

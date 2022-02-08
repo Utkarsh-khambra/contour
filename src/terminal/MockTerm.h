@@ -24,7 +24,9 @@ class MockTerm: public MockScreenEvents
   public:
     explicit MockTerm(PageSize _size, LineCount _hist = {});
 
-    Screen<MockTerm> screen;
+    Screen<MockTerm>& screen() noexcept { return screen_; }
+
+    Screen<MockTerm> screen_;
 };
 
 } // namespace terminal
