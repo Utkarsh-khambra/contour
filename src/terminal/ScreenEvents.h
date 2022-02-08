@@ -15,6 +15,7 @@
 
 #include <terminal/InputGenerator.h>
 #include <terminal/Sequencer.h>
+#include <terminal/primitives.h>
 
 #include <optional>
 #include <string_view>
@@ -24,12 +25,6 @@ namespace terminal
 {
 
 class Image;
-
-enum class ScreenType
-{
-    Main = 0,
-    Alternate = 1
-};
 
 struct FontDef
 {

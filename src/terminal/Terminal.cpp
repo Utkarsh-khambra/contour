@@ -129,16 +129,16 @@ Terminal::Terminal(Pty& _pty,
     mouseProtocolBypassModifier_ { _mouseProtocolBypassModifier },
     inputGenerator_ {},
     copyLastMarkRangeOffset_ { _copyLastMarkRangeOffset },
+    // clang-format off
     screen_ { pty_.pageSize(),
               *this,
-              true, // logs raw output by default?
-              true, // logs trace output by default?
               _maxHistoryLineCount,
               _maxImageSize,
               _maxImageColorRegisters,
               _sixelCursorConformance,
-              _colorPalette,
+              move(_colorPalette),
               _allowReflowOnResize },
+    // clang-format on
     viewport_ { screen_,
                 [this]() {
                     breakLoopAndRefreshRenderBuffer();

@@ -456,6 +456,12 @@ constexpr ColumnOffset& operator-=(ColumnOffset& a, ColumnCount b) noexcept
 }
 // }}}
 
+enum class ScreenType
+{
+    Main = 0,
+    Alternate = 1
+};
+
 // TODO: Maybe make boxed.h into its own C++ github repo?
 // TODO: Differenciate Line/Column types for DECOM enabled/disabled coordinates?
 //

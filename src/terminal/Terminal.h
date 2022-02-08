@@ -16,7 +16,9 @@
 #include <terminal/InputGenerator.h>
 #include <terminal/RenderBuffer.h>
 #include <terminal/ScreenEvents.h>
+#include <terminal/Sequencer.h>
 #include <terminal/Selector.h>
+#include <terminal/TerminalState.h>
 #include <terminal/Viewport.h>
 #include <terminal/pty/Pty.h>
 
