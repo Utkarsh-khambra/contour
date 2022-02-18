@@ -148,6 +148,7 @@ install_deps_ubuntu()
         libkf5windowsystem-dev
         libqt5gui5
         libqt5opengl5-dev
+        libsixel-dev
         libyaml-cpp-dev
         make
         ncurses-bin
@@ -202,6 +203,7 @@ install_deps_FreeBSD()
         freetype2 \
         harfbuzz \
         libfmt \
+        libsixel \
         microsoft-gsl \
         ncurses \
         ninja \
@@ -229,6 +231,7 @@ install_deps_arch()
         fontconfig \
         git \
         harfbuzz \
+        libsixel \
         microsoft-gsl \
         ninja \
         qt5-base \
@@ -241,6 +244,8 @@ install_deps_fedora()
     fetch_and_unpack_gsl
     fetch_and_unpack_fmtlib
     [ x$PREPARE_ONLY_EMBEDS = xON ] && return
+
+    # TODO(pr) Houston we have a problem! Fedora does not like to have libsixel.
 
     # catch-devel
     local packages="
@@ -277,6 +282,7 @@ install_deps_darwin()
         fmt \
         freetype \
         harfbuzz \
+        libsixel \
         pkg-config \
         range-v3 \
         qt@5 \

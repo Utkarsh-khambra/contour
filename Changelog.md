@@ -24,6 +24,7 @@
 - Adds new configuration option `renderer.tile_cache_count` to configure texture atlas cache capacity.
 - Adds new configuration option `renderer.tile_direct_mapping` to enable/disalbe texture atlas direct mapping.
 - Adds new colorscheme setting `background_image.path` and `background_image.opacity` to optionally render a terminal background image.
+- Adds new command `contour image PATH_TO_IMAGE` to send an image file to the terminal for displaying.
 - Adds `mock` font locator (mostly interesting for advanced use for CI testing).
 - Adds VT sequence `SM ? 8452 h` / `RM ? 8452 l` for enabling/disabling sixel cursor placement conformance (xterm extension).
 - Adds SGR-Pixels support, VT sequence `SM ? 1016 h` / `RM ? 1016 l` (#574).
