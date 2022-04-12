@@ -103,7 +103,8 @@ namespace helper
         return testMatchMode(_actualModeFlags, _expected, Flag::AlternateScreen)
                && testMatchMode(_actualModeFlags, _expected, Flag::AppCursor)
                && testMatchMode(_actualModeFlags, _expected, Flag::AppKeypad)
-               && testMatchMode(_actualModeFlags, _expected, Flag::Select);
+               && testMatchMode(_actualModeFlags, _expected, Flag::Select)
+               && testMatchMode(_actualModeFlags, _expected, Flag::ViSearch);
     }
 } // namespace helper
 

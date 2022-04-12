@@ -41,6 +41,7 @@
 #include <algorithm>
 #include <fstream>
 
+#include "fmt/core.h"
 #include <QtNetwork/QHostInfo>
 
 #if !defined(_WIN32)
@@ -118,7 +119,8 @@ TerminalSession::TerminalSession(unique_ptr<Pty> _pty,
                 profile_.colors,
                 _display ? _display->refreshRate() : 50.0,
                 config_.reflowOnResize },
-    display_ { _display.release() }
+    display_ { _display.release() },
+    viMode(terminal_.state().primaryBuffer)
 {
     if (_liveConfig)
     {
@@ -797,6 +799,17 @@ bool TerminalSession::operator()(actions::ScrollToTop)
 bool TerminalSession::operator()(actions::ScrollUp)
 {
     terminal().viewport().scrollUp(profile_.historyScrollMultiplier);
+    return true;
+}
+
+bool TerminalSession::operator()(actions::Search)
+{
+    terminal::Cell a(
+        terminal::GraphicsAttributes { .foregroundColor = terminal::Color(terminal::RGBColor(255, 0, 0)),
+                                       .backgroundColor = terminal::Color(terminal::RGBColor(0, 0, 0)) });
+
+    // viMode.searchText("Gi");
+    display()->drawViStatusLine();
     return true;
 }
 

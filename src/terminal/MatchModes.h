@@ -31,7 +31,7 @@ class MatchModes
         AppKeypad = 0x04,
         Select = 0x08,
         // future modes
-        // ViSearch            = 0x10, // TODO: This mode we want.
+        ViSearch = 0x10, // TODO: This mode we want.
     };
 
     enum class Status

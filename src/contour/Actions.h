@@ -53,6 +53,7 @@ struct ScrollPageUp{};
 struct ScrollToBottom{};
 struct ScrollToTop{};
 struct ScrollUp{};
+struct Search{};
 struct SendChars{ std::string chars; };
 struct ToggleAllKeyMaps{};
 struct ToggleFullscreen{};
@@ -94,6 +95,7 @@ using Action = std::variant<CancelSelection,
                             ScrollToBottom,
                             ScrollToTop,
                             ScrollUp,
+                            Search,
                             SendChars,
                             ToggleAllKeyMaps,
                             ToggleFullscreen,
@@ -154,6 +156,7 @@ DECLARE_ACTION_FMT(ScrollPageUp)
 DECLARE_ACTION_FMT(ScrollToBottom)
 DECLARE_ACTION_FMT(ScrollToTop)
 DECLARE_ACTION_FMT(ScrollUp)
+DECLARE_ACTION_FMT(Search)
 DECLARE_ACTION_FMT(SendChars)
 DECLARE_ACTION_FMT(ToggleAllKeyMaps)
 DECLARE_ACTION_FMT(ToggleFullscreen)
@@ -212,6 +215,7 @@ struct formatter<contour::actions::Action>
         HANDLE_ACTION(ScrollToBottom);
         HANDLE_ACTION(ScrollToTop);
         HANDLE_ACTION(ScrollUp);
+        HANDLE_ACTION(Search);
         HANDLE_ACTION(SendChars);
         HANDLE_ACTION(ToggleAllKeyMaps);
         HANDLE_ACTION(ToggleFullscreen);

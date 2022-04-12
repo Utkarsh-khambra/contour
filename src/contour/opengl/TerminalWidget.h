@@ -50,7 +50,7 @@
 namespace contour::opengl
 {
 
-// It currently just handles one terminal inside, but ideally later it can handle
+// It currently just handles one jerminal inside, but ideally later it can handle
 // multiple terminals in tabbed views as well tiled.
 class TerminalWidget: public QOpenGLWidget, public TerminalDisplay, private QOpenGLExtraFunctions
 {
@@ -123,6 +123,7 @@ class TerminalWidget: public QOpenGLWidget, public TerminalDisplay, private QOpe
     void setHyperlinkDecoration(terminal::renderer::Decorator _normal,
                                 terminal::renderer::Decorator _hover) override;
     void setBackgroundOpacity(terminal::Opacity _opacity) override;
+    void drawViStatusLine() override;
 
     // terminal events
     void scheduleRedraw() override;

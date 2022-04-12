@@ -17,6 +17,7 @@
 #include <contour/opengl/OpenGLRenderer.h>
 #include <contour/opengl/TerminalWidget.h>
 
+#include <terminal/Cell.h>
 #include <terminal/Color.h>
 #include <terminal/Metrics.h>
 #include <terminal/pty/Pty.h>
@@ -24,6 +25,8 @@
 #include <crispy/App.h>
 #include <crispy/logstore.h>
 #include <crispy/stdfs.h>
+
+#include <fmt/format.h>
 
 #include <QtCore/QDebug>
 #include <QtCore/QFileInfo>
@@ -43,6 +46,9 @@
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QStyle>
 
+#include <charconv>
+
+#include "fmt/core.h"
 #include <QtNetwork/QHostInfo>
 
 #if defined(CONTOUR_BLUR_PLATFORM_KWIN)
@@ -61,6 +67,27 @@
 #include <string_view>
 #include <tuple>
 #include <vector>
+
+// remove
+struct wrapper
+{
+    std::u32string x;
+};
+
+template <>
+struct fmt::formatter<wrapper>
+{
+    [[maybe_unused]] static constexpr auto parse(const format_parse_context& ctx) { return ctx.begin(); }
+
+    template <typename FormatContext>
+    auto format(const wrapper& val, FormatContext& ctx)
+    {
+
+        std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> conv1;
+        std::string s = conv1.to_bytes(val.x);
+        return format_to(ctx.out(), "{}", s);
+    }
+};
 
 // Temporarily disabled (I think it was OS/X that didn't like glDebugMessageCallback).
 // #define CONTOUR_DEBUG_OPENGL 1
@@ -1166,6 +1193,36 @@ void TerminalWidget::setBackgroundOpacity(terminal::Opacity _opacity)
 {
     renderer_.setBackgroundOpacity(_opacity);
     session_.terminal().breakLoopAndRefreshRenderBuffer();
+}
+
+static std::u32string stringTou32(std::string&& str)
+{
+
+    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> conv1;
+    return conv1.from_bytes(str);
+}
+
+void TerminalWidget::drawViStatusLine()
+{
+    auto renderables = renderer_.renderables();
+    // Get maximum grid lines,
+    // Limits the maximum line count to be 10 digit number
+    auto maxLines = stringTou32(std::to_string(terminal().maxHistoryLineCount().get()));
+    auto currentLine = stringTou32(std::to_string(terminal().realCursorPosition().line.get()));
+    auto temp = maxLines + U"/" + currentLine;
+
+    // terminal::RenderCell cell { .codepoints = temp,
+    //                             .position = { .line = terminal::LineOffset(15),
+    //                                           .column = terminal::ColumnOffset(15) },
+    //                             .foregroundColor = terminal::RGBColor(255, 255, 255),
+    //                             .backgroundColor = terminal::RGBColor(0, 0, 0) };
+    // static_cast<terminal::renderer::BackgroundRenderer*>(&(renderables[0].get()))->renderCell(cell);
+    // static_cast<terminal::renderer::TextRenderer*>(&(renderables[4].get()))->renderCell(cell);
+    terminal().writeToScreen("Hi");
+    wrapper t { .x = temp };
+    fmt::print("{}\n", t);
+    // renderer_.renderTarget().renderRectangle(
+    //     3, 3, Width(90), Height(90), terminal::RGBAColor(255, 0, 0, 200));
 }
 // }}}
 

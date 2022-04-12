@@ -73,6 +73,7 @@ optional<Action> fromString(string const& _name)
         mapAction<actions::ScrollToBottom>("ScrollToBottom"),
         mapAction<actions::ScrollToTop>("ScrollToTop"),
         mapAction<actions::ScrollUp>("ScrollUp"),
+        mapAction<actions::Search>("Search"),
         mapAction<actions::SendChars>("SendChars"),
         mapAction<actions::ToggleAllKeyMaps>("ToggleAllKeyMaps"),
         mapAction<actions::ToggleFullscreen>("ToggleFullscreen"),

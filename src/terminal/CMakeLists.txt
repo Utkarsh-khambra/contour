@@ -44,6 +44,7 @@ set(terminal_HEADERS
     Terminal.h
     VTType.h
     Viewport.h
+		ViMode.h
     primitives.h
     pty/ConPty.h
     pty/MockPty.h
@@ -86,6 +87,7 @@ set(terminal_SOURCES
     TerminalState.cpp
     VTType.cpp
     Viewport.cpp
+		ViMode.cpp
     primitives.cpp
     pty/MockPty.cpp
     pty/MockViewPty.cpp

@@ -19,6 +19,7 @@
 #include <terminal/Selector.h>
 #include <terminal/Sequence.h>
 #include <terminal/TerminalState.h>
+#include <terminal/ViMode.h>
 #include <terminal/Viewport.h>
 #include <terminal/primitives.h>
 #include <terminal/pty/Pty.h>
@@ -582,6 +583,7 @@ class Terminal
         int cellWidth(CellLocation _pos) const noexcept override;
     };
     SelectionHelper selectionHelper_;
+    ViMode viMode_;
 };
 
 } // namespace terminal

@@ -113,7 +113,8 @@ Terminal::Terminal(unique_ptr<Pty> _pty,
                 [this]() {
                     breakLoopAndRefreshRenderBuffer();
                 } },
-    selectionHelper_ { this }
+    selectionHelper_ { this },
+    viMode_(state_.primaryBuffer)
 {
 #if 0
     hardReset();

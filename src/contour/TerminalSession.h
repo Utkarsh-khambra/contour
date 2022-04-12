@@ -157,6 +157,7 @@ class TerminalSession: public QObject, public terminal::Terminal::Events
     bool operator()(actions::ScrollToBottom);
     bool operator()(actions::ScrollToTop);
     bool operator()(actions::ScrollUp);
+    bool operator()(actions::Search);
     bool operator()(actions::SendChars const& _event);
     bool operator()(actions::ToggleAllKeyMaps);
     bool operator()(actions::ToggleFullscreen);
@@ -233,6 +234,7 @@ class TerminalSession: public QObject, public terminal::Terminal::Events
     terminal::ScreenType currentScreenType_ = terminal::ScreenType::Primary;
     terminal::CellLocation currentMousePosition_ = terminal::CellLocation {};
     bool allowKeyMappings_ = true;
+    ViMode viMode;
 };
 
 } // namespace contour
