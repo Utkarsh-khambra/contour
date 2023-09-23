@@ -289,17 +289,22 @@ namespace detail // {{{
 
 // clang-format off
 
+#define STRINGIZE2(x) #x
+#define STRINGIZE(x) STRINGIZE2(x)
+#define CONTROL_CHAR(a,name, description,...) constexpr inline auto name = detail::C0(a, STRINGIZE(name), description)
+
 // C0
-constexpr inline auto EOT = detail::C0('\x04', "EOT", "End of Transmission");
-constexpr inline auto BEL = detail::C0('\x07', "BEL", "Bell");
-constexpr inline auto BS  = detail::C0('\x08', "BS", "Backspace");
-constexpr inline auto TAB = detail::C0('\x09', "TAB", "Tab");
-constexpr inline auto LF  = detail::C0('\x0A', "LF", "Line Feed");
-constexpr inline auto VT  = detail::C0('\x0B', "VT", "Vertical Tab"); // Even though VT means Vertical Tab, it seems that xterm is doing an IND instead.
-constexpr inline auto FF  = detail::C0('\x0C', "FF", "Form Feed");
-constexpr inline auto CR  = detail::C0('\x0D', "CR", "Carriage Return");
-constexpr inline auto LS1 = detail::C0('\x0E', "LS1", "Shift Out; Maps G1 into GL.", VTType::VT220);
-constexpr inline auto LS0 = detail::C0('\x0F', "LS0", "Shift In; Maps G0 into GL (the default).", VTType::VT220);
+CONTROL_CHAR( '\x04',EOT , "End of Transmission");
+CONTROL_CHAR( '\x07',BEL , "Bell");
+CONTROL_CHAR( '\x08',BS, "Backspace");
+CONTROL_CHAR( '\x09',TAB , "Tab");
+CONTROL_CHAR( '\x0A',LF, "Line Feed");
+CONTROL_CHAR( '\x0B',VT ,"Vertical Tab"); // Even though VT means Vertical Tab,VT  , it seems that xterm is doing an IND instead.
+CONTROL_CHAR( '\x0C',FF ,"Form Feed");
+CONTROL_CHAR( '\x0D',CR ,"Carriage Return");
+CONTROL_CHAR( '\x0E',LS1 , "Shift Out; Maps G1 into GL.", VTType::VT220);
+CONTROL_CHAR( '\x0F',LS0 , "Shift In; Maps G0 into GL (the default).", VTType::VT220);
+#undef CONTROL_CHAR
 
 // SCS to support (G0, G1, G2, G3)
 // A        UK (British), VT100
@@ -325,103 +330,204 @@ constexpr inline auto LS0 = detail::C0('\x0F', "LS0", "Shift In; Maps G0 into GL
 // =        Swiss, VT200.
 // % 2      Turkish, VT500.
 
+#define ESC_FUNCTION(name, a, arg, vttype,description ) constexpr inline auto name  = detail::ESC(a, arg, vttype, STRINGIZE(name), description)
+
+
 // ESC functions
-constexpr inline auto SCS_G0_SPECIAL = detail::ESC('(', '0', VTType::VT100, "SCS_G0_SPECIAL", "Set G0 to DEC Special Character and Line Drawing Set");// NOLINT
-constexpr inline auto SCS_G0_USASCII = detail::ESC('(', 'B', VTType::VT100, "SCS_G0_USASCII", "Set G0 to USASCII");// NOLINT
-constexpr inline auto SCS_G1_SPECIAL = detail::ESC(')', '0', VTType::VT100, "SCS_G1_SPECIAL", "Set G1 to DEC Special Character and Line Drawing Set");// NOLINT
-constexpr inline auto SCS_G1_USASCII = detail::ESC(')', 'B', VTType::VT100, "SCS_G1_USASCII", "Set G1 to USASCII");//NOLINT
-constexpr inline auto DECALN  = detail::ESC('#', '8', VTType::VT100, "DECALN", "Screen Alignment Pattern");
-constexpr inline auto DECBI   = detail::ESC(std::nullopt, '6', VTType::VT100, "DECBI", "Back Index");
-constexpr inline auto DECFI   = detail::ESC(std::nullopt, '9', VTType::VT100, "DECFI", "Forward Index");
-constexpr inline auto DECKPAM = detail::ESC(std::nullopt, '=', VTType::VT100, "DECKPAM", "Keypad Application Mode");
-constexpr inline auto DECKPNM = detail::ESC(std::nullopt, '>', VTType::VT100, "DECKPNM", "Keypad Numeric Mode");
-constexpr inline auto DECRS   = detail::ESC(std::nullopt, '8', VTType::VT100, "DECRS", "Restore Cursor");
-constexpr inline auto DECSC   = detail::ESC(std::nullopt, '7', VTType::VT100, "DECSC", "Save Cursor");
-constexpr inline auto HTS     = detail::ESC(std::nullopt, 'H', VTType::VT100, "HTS", "Horizontal Tab Set");
-constexpr inline auto IND     = detail::ESC(std::nullopt, 'D', VTType::VT100, "IND", "Index");
-constexpr inline auto NEL     = detail::ESC(std::nullopt, 'E', VTType::VT100, "NEL", "Next Line");
-constexpr inline auto RI      = detail::ESC(std::nullopt, 'M', VTType::VT100, "RI", "Reverse Index");
-constexpr inline auto RIS     = detail::ESC(std::nullopt, 'c', VTType::VT100, "RIS", "Reset to Initial State (Hard Reset)");
-constexpr inline auto SS2     = detail::ESC(std::nullopt, 'N', VTType::VT220, "SS2", "Single Shift Select (G2 Character Set)");
-constexpr inline auto SS3     = detail::ESC(std::nullopt, 'O', VTType::VT220, "SS3", "Single Shift Select (G3 Character Set)");
+ESC_FUNCTION(SCS_G0_SPECIAL ,'(', '0', VTType::VT100, "Set G0 to DEC Special Character and Line Drawing Set");
+ESC_FUNCTION(SCS_G0_USASCII ,'(', 'B', VTType::VT100, "Set G0 to USASCII");
+ESC_FUNCTION(SCS_G1_SPECIAL ,')', '0', VTType::VT100, "Set G1 to DEC Special Character and Line Drawing Set");
+ESC_FUNCTION(SCS_G1_USASCII ,')', 'B', VTType::VT100, "Set G1 to USASCII");
+ESC_FUNCTION(DECALN, '#', '8', VTType::VT100, "Screen Alignment Pattern");
+ESC_FUNCTION(DECBI,std::nullopt, '6', VTType::VT100, "Back Index");
+ESC_FUNCTION(DECFI,std::nullopt, '9', VTType::VT100, "Forward Index");
+ESC_FUNCTION(DECKPAM,std::nullopt, '=', VTType::VT100, "Keypad Application Mode");
+ESC_FUNCTION(DECKPNM ,std::nullopt, '>', VTType::VT100, "Keypad Numeric Mode");
+ESC_FUNCTION(DECRS   ,std::nullopt, '8', VTType::VT100, "Restore Cursor");
+ESC_FUNCTION(DECSC   ,std::nullopt, '7', VTType::VT100, "Save Cursor");
+ESC_FUNCTION(HTS     ,std::nullopt, 'H', VTType::VT100, "Horizontal Tab Set");
+ESC_FUNCTION(IND     ,std::nullopt, 'D', VTType::VT100, "Index");
+ESC_FUNCTION(NEL     ,std::nullopt, 'E', VTType::VT100, "Next Line");
+ESC_FUNCTION(RI      ,std::nullopt, 'M', VTType::VT100, "Reverse Index");
+ESC_FUNCTION(RIS     ,std::nullopt, 'c', VTType::VT100, "Reset to Initial State (Hard Reset)");
+ESC_FUNCTION(SS2     ,std::nullopt, 'N', VTType::VT220, "Single Shift Select (G2 Character Set)");
+ESC_FUNCTION(SS3     ,std::nullopt, 'O', VTType::VT220, "Single Shift Select (G3 Character Set)");
+
+#undef ESC_FUNCTION
+// constexpr inline auto SCS_G0_SPECIAL = detail::ESC('(', '0', VTType::VT100, "SCS_G0_SPECIAL", "Set G0 to DEC Special Character and Line Drawing Set");// NOLINT
+// constexpr inline auto SCS_G0_USASCII = detail::ESC('(', 'B', VTType::VT100, "SCS_G0_USASCII", "Set G0 to USASCII");// NOLINT
+// constexpr inline auto SCS_G1_SPECIAL = detail::ESC(')', '0', VTType::VT100, "SCS_G1_SPECIAL", "Set G1 to DEC Special Character and Line Drawing Set");// NOLINT
+// constexpr inline auto SCS_G1_USASCII = detail::ESC(')', 'B', VTType::VT100, "SCS_G1_USASCII", "Set G1 to USASCII");//NOLINT
+// constexpr inline auto DECALN  = detail::ESC('#', '8', VTType::VT100, "DECALN", "Screen Alignment Pattern");
+// constexpr inline auto DECBI   = detail::ESC(std::nullopt, '6', VTType::VT100, "DECBI", "Back Index");
+// constexpr inline auto DECFI   = detail::ESC(std::nullopt, '9', VTType::VT100, "DECFI", "Forward Index");
+// constexpr inline auto DECKPAM = detail::ESC(std::nullopt, '=', VTType::VT100, "DECKPAM", "Keypad Application Mode");
+// constexpr inline auto DECKPNM = detail::ESC(std::nullopt, '>', VTType::VT100, "DECKPNM", "Keypad Numeric Mode");
+// constexpr inline auto DECRS   = detail::ESC(std::nullopt, '8', VTType::VT100, "DECRS", "Restore Cursor");
+// constexpr inline auto DECSC   = detail::ESC(std::nullopt, '7', VTType::VT100, "DECSC", "Save Cursor");
+// constexpr inline auto HTS     = detail::ESC(std::nullopt, 'H', VTType::VT100, "HTS", "Horizontal Tab Set");
+// constexpr inline auto IND     = detail::ESC(std::nullopt, 'D', VTType::VT100, "IND", "Index");
+// constexpr inline auto NEL     = detail::ESC(std::nullopt, 'E', VTType::VT100, "NEL", "Next Line");
+// constexpr inline auto RI      = detail::ESC(std::nullopt, 'M', VTType::VT100, "RI", "Reverse Index");
+// constexpr inline auto RIS     = detail::ESC(std::nullopt, 'c', VTType::VT100, "RIS", "Reset to Initial State (Hard Reset)");
+// constexpr inline auto SS2     = detail::ESC(std::nullopt, 'N', VTType::VT220, "SS2", "Single Shift Select (G2 Character Set)");
+// constexpr inline auto SS3     = detail::ESC(std::nullopt, 'O', VTType::VT220, "SS3", "Single Shift Select (G3 Character Set)");
+
+
+#define CSI_FUNCTION(name, a, argmin, argmax, intermediate, finalchar, vttype, description) constexpr inline auto name = detail::CSI(a, argmin, argmax, intermediate, finalchar, vttype, STRINGIZE(name), description)
 
 // CSI
 constexpr inline auto ArgsMax = 127; // this is the maximum number that fits into 7 bits.
 
 // CSI functions
-constexpr inline auto ANSISYSSC   = detail::CSI(std::nullopt, 0, 0, std::nullopt, 'u', VTType::VT100, "ANSISYSSC", "Save Cursor (ANSI.SYS)");
-constexpr inline auto CBT         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'Z', VTType::VT100, "CBT", "Cursor Backward Tabulation");
-constexpr inline auto CHA         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'G', VTType::VT100, "CHA", "Move cursor to column");
-constexpr inline auto CHT         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'I', VTType::VT100, "CHT", "Cursor Horizontal Forward Tabulation");
-constexpr inline auto CNL         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'E', VTType::VT100, "CNL", "Move cursor to next line");
-constexpr inline auto CPL         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'F', VTType::VT100, "CPL", "Move cursor to previous line");
-constexpr inline auto CPR         = detail::CSI(std::nullopt, 1, 1, std::nullopt, 'n', VTType::VT100, "CPR", "Request Cursor position");
-constexpr inline auto CUB         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'D', VTType::VT100, "CUB", "Move cursor backward");
-constexpr inline auto CUD         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'B', VTType::VT100, "CUD", "Move cursor down");
-constexpr inline auto CUF         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'C', VTType::VT100, "CUF", "Move cursor forward");
-constexpr inline auto CUP         = detail::CSI(std::nullopt, 0, 2, std::nullopt, 'H', VTType::VT100, "CUP", "Move cursor to position");
-constexpr inline auto CUU         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'A', VTType::VT100, "CUU", "Move cursor up");
-constexpr inline auto DA1         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'c', VTType::VT100, "DA1", "Send primary device attributes");
-constexpr inline auto DA2         = detail::CSI('>', 0, 1, std::nullopt, 'c', VTType::VT100, "DA2", "Send secondary device attributes");
-constexpr inline auto DA3         = detail::CSI('=', 0, 1, std::nullopt, 'c', VTType::VT100, "DA3", "Send tertiary device attributes");
-constexpr inline auto DCH         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'P', VTType::VT100, "DCH", "Delete characters");
-constexpr inline auto DECCARA     = detail::CSI(std::nullopt, 5, ArgsMax, '$', 'r', VTType::VT420, "DECCARA", "Change Attributes in Rectangular Area");
-constexpr inline auto DECCRA      = detail::CSI(std::nullopt, 0, 8, '$', 'v', VTType::VT420, "DECCRA", "Copy rectangular area");
-constexpr inline auto DECERA      = detail::CSI(std::nullopt, 0, 4, '$', 'z', VTType::VT420, "DECERA", "Erase rectangular area");
-constexpr inline auto DECFRA      = detail::CSI(std::nullopt, 0, 5, '$', 'x', VTType::VT420, "DECFRA", "Fill rectangular area");
-constexpr inline auto DECDC       = detail::CSI(std::nullopt, 0, 1, '\'', '~', VTType::VT420, "DECDC", "Delete column");
-constexpr inline auto DECIC       = detail::CSI(std::nullopt, 0, 1, '\'', '}', VTType::VT420, "DECIC", "Insert column");
-constexpr inline auto DECSCA      = detail::CSI(std::nullopt, 0, 1, '"', 'q', VTType::VT240, "DECSCA", "Select Character Protection Attribute");
-constexpr inline auto DECSED      = detail::CSI('?', 0, 1, std::nullopt, 'J', VTType::VT240, "DECSED", "Selective Erase in Display");
-constexpr inline auto DECSERA     = detail::CSI(std::nullopt, 0, 4, '$', '{', VTType::VT240, "DECSERA", "Selective Erase in Rectangular Area");
-constexpr inline auto DECSEL      = detail::CSI('?', 0, 1, std::nullopt, 'K', VTType::VT240, "DECSEL", "Selective Erase in Line");
-constexpr inline auto XTRESTORE   = detail::CSI('?', 0, ArgsMax, std::nullopt, 'r', VTExtension::XTerm, "XTRESTORE", "Restore DEC private modes.");
-constexpr inline auto XTSAVE      = detail::CSI('?', 0, ArgsMax, std::nullopt, 's', VTExtension::XTerm, "XTSAVE", "Save DEC private modes.");
-constexpr inline auto DECRM       = detail::CSI('?', 1, ArgsMax, std::nullopt, 'l', VTType::VT100, "DECRM", "Reset DEC-mode");
-constexpr inline auto DECRQM      = detail::CSI('?', 1, 1, '$', 'p', VTType::VT100, "DECRQM", "Request DEC-mode");
-constexpr inline auto DECRQM_ANSI = detail::CSI(std::nullopt, 1, 1, '$', 'p', VTType::VT100, "DECRQM_ANSI", "Request ANSI-mode");// NOLINT
-constexpr inline auto DECRQPSR    = detail::CSI(std::nullopt, 1, 1, '$', 'w', VTType::VT320, "DECRQPSR", "Request presentation state report");
-constexpr inline auto DECSCL      = detail::CSI(std::nullopt, 2, 2, '"', 'p', VTType::VT220, "DECSCL", "Set conformance level (DECSCL), VT220 and up.");
-constexpr inline auto DECSCPP     = detail::CSI(std::nullopt, 0, 1, '$', '|', VTType::VT100, "DECSCPP", "Select 80 or 132 Columns per Page");
-constexpr inline auto DECSNLS     = detail::CSI(std::nullopt, 0, 1, '*', '|', VTType::VT420, "DECSNLS", "Select number of lines per screen.");
-constexpr inline auto DECSCUSR    = detail::CSI(std::nullopt, 0, 1, ' ', 'q', VTType::VT520, "DECSCUSR", "Set Cursor Style");
-constexpr inline auto DECSLRM     = detail::CSI(std::nullopt, 0, 2, std::nullopt, 's', VTType::VT420, "DECSLRM", "Set left/right margin");
-constexpr inline auto DECSM       = detail::CSI('?', 1, ArgsMax, std::nullopt, 'h', VTType::VT100, "DECSM", "Set DEC-mode");
-constexpr inline auto DECSTBM     = detail::CSI(std::nullopt, 0, 2, std::nullopt, 'r', VTType::VT100, "DECSTBM", "Set top/bottom margin");
-constexpr inline auto DECSTR      = detail::CSI(std::nullopt, 0, 0, '!', 'p', VTType::VT100, "DECSTR", "Soft terminal reset");
-constexpr inline auto DECXCPR     = detail::CSI(std::nullopt, 0, 0, std::nullopt, '6', VTType::VT100, "DECXCPR", "Request extended cursor position");
-constexpr inline auto DL          = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'M', VTType::VT100, "DL",  "Delete lines");
-constexpr inline auto ECH         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'X', VTType::VT420, "ECH", "Erase characters");
-constexpr inline auto ED          = detail::CSI(std::nullopt, 0, ArgsMax, std::nullopt, 'J', VTType::VT100, "ED",  "Erase in display");
-constexpr inline auto EL          = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'K', VTType::VT100, "EL",  "Erase in line");
-constexpr inline auto HPA         = detail::CSI(std::nullopt, 1, 1, std::nullopt, '`', VTType::VT100, "HPA", "Horizontal position absolute");
-constexpr inline auto HPR         = detail::CSI(std::nullopt, 1, 1, std::nullopt, 'a', VTType::VT100, "HPR", "Horizontal position relative");
-constexpr inline auto HVP         = detail::CSI(std::nullopt, 0, 2, std::nullopt, 'f', VTType::VT100, "HVP", "Horizontal and vertical position");
-constexpr inline auto ICH         = detail::CSI(std::nullopt, 0, 1, std::nullopt, '@', VTType::VT420, "ICH", "Insert character");
-constexpr inline auto IL          = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'L', VTType::VT100, "IL",  "Insert lines");
-constexpr inline auto REP         = detail::CSI(std::nullopt, 1, 1, std::nullopt, 'b', VTType::VT100, "REP", "Repeat the preceding graphic character Ps times");
-constexpr inline auto RM          = detail::CSI(std::nullopt, 1, ArgsMax, std::nullopt, 'l', VTType::VT100, "RM",  "Reset mode");
-constexpr inline auto SCOSC       = detail::CSI(std::nullopt, 0, 0, std::nullopt, 's', VTType::VT100, "SCOSC", "Save Cursor (available only when DECLRMM is disabled)");
-constexpr inline auto SD          = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'T', VTType::VT100, "SD",  "Scroll down (pan up)");
-constexpr inline auto SETMARK     = detail::CSI('>', 0, 0, std::nullopt, 'M', VTExtension::Contour, "XTSETMARK", "Set Vertical Mark (experimental syntax)");
-constexpr inline auto SGR         = detail::CSI(std::nullopt, 0, ArgsMax, std::nullopt, 'm', VTType::VT100, "SGR", "Select graphics rendition");
-constexpr inline auto SM          = detail::CSI(std::nullopt, 1, ArgsMax, std::nullopt, 'h', VTType::VT100, "SM",  "Set mode");
-constexpr inline auto SU          = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'S', VTType::VT100, "SU",  "Scroll up (pan down)");
-constexpr inline auto TBC         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'g', VTType::VT100, "TBC", "Horizontal Tab Clear");
-constexpr inline auto VPA         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'd', VTType::VT100, "VPA", "Vertical Position Absolute");
-constexpr inline auto WINMANIP    = detail::CSI(std::nullopt, 1, 3, std::nullopt, 't', VTExtension::XTerm, "WINMANIP", "Window Manipulation");
-constexpr inline auto XTSMGRAPHICS= detail::CSI('?', 2, 4, std::nullopt, 'S', VTExtension::XTerm, "XTSMGRAPHICS", "Setting/getting Sixel/ReGIS graphics settings.");
-constexpr inline auto XTPOPCOLORS    = detail::CSI(std::nullopt, 0, ArgsMax, '#', 'Q', VTExtension::XTerm, "XTPOPCOLORS", "Pops the color palette from the palette's saved-stack.");
-constexpr inline auto XTPUSHCOLORS   = detail::CSI(std::nullopt, 0, ArgsMax, '#', 'P', VTExtension::XTerm, "XTPUSHCOLORS", "Pushes the color palette onto the palette's saved-stack.");
-constexpr inline auto XTREPORTCOLORS = detail::CSI(std::nullopt, 0, 0, '#', 'R', VTExtension::XTerm, "XTREPORTCOLORS", "Reports number of color palettes on the stack.");
-constexpr inline auto XTSHIFTESCAPE=detail::CSI('>', 0, 1, std::nullopt, 's', VTExtension::XTerm, "XTSHIFTESCAPE", "Set/reset shift-escape options.");
-constexpr inline auto XTVERSION   = detail::CSI('>', 0, 1, std::nullopt, 'q', VTExtension::XTerm, "XTVERSION", "Query terminal name and version");
-constexpr inline auto XTCAPTURE   = detail::CSI('>', 0, 2, std::nullopt, 't', VTExtension::Contour, "XTCAPTURE", "Report screen buffer capture.");
+// constexpr inline auto ANSISYSSC   = detail::CSI(std::nullopt, 0, 0, std::nullopt, 'u', VTType::VT100, "ANSISYSSC", "Save Cursor (ANSI.SYS)");
+// constexpr inline auto CBT         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'Z', VTType::VT100, "CBT", "Cursor Backward Tabulation");
+// constexpr inline auto CHA         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'G', VTType::VT100, "CHA", "Move cursor to column");
+// constexpr inline auto CHT         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'I', VTType::VT100, "CHT", "Cursor Horizontal Forward Tabulation");
+// constexpr inline auto CNL         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'E', VTType::VT100, "CNL", "Move cursor to next line");
+// constexpr inline auto CPL         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'F', VTType::VT100, "CPL", "Move cursor to previous line");
+// constexpr inline auto CPR         = detail::CSI(std::nullopt, 1, 1, std::nullopt, 'n', VTType::VT100, "CPR", "Request Cursor position");
+// constexpr inline auto CUB         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'D', VTType::VT100, "CUB", "Move cursor backward");
+// constexpr inline auto CUD         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'B', VTType::VT100, "CUD", "Move cursor down");
+// constexpr inline auto CUF         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'C', VTType::VT100, "CUF", "Move cursor forward");
+// constexpr inline auto CUP         = detail::CSI(std::nullopt, 0, 2, std::nullopt, 'H', VTType::VT100, "CUP", "Move cursor to position");
+// constexpr inline auto CUU         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'A', VTType::VT100, "CUU", "Move cursor up");
+// constexpr inline auto DA1         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'c', VTType::VT100, "DA1", "Send primary device attributes");
+// constexpr inline auto DA2         = detail::CSI('>', 0, 1, std::nullopt, 'c', VTType::VT100, "DA2", "Send secondary device attributes");
+// constexpr inline auto DA3         = detail::CSI('=', 0, 1, std::nullopt, 'c', VTType::VT100, "DA3", "Send tertiary device attributes");
+// constexpr inline auto DCH         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'P', VTType::VT100, "DCH", "Delete characters");
+// constexpr inline auto DECCARA     = detail::CSI(std::nullopt, 5, ArgsMax, '$', 'r', VTType::VT420, "DECCARA", "Change Attributes in Rectangular Area");
+// constexpr inline auto DECCRA      = detail::CSI(std::nullopt, 0, 8, '$', 'v', VTType::VT420, "DECCRA", "Copy rectangular area");
+// constexpr inline auto DECERA      = detail::CSI(std::nullopt, 0, 4, '$', 'z', VTType::VT420, "DECERA", "Erase rectangular area");
+// constexpr inline auto DECFRA      = detail::CSI(std::nullopt, 0, 5, '$', 'x', VTType::VT420, "DECFRA", "Fill rectangular area");
+// constexpr inline auto DECDC       = detail::CSI(std::nullopt, 0, 1, '\'', '~', VTType::VT420, "DECDC", "Delete column");
+// constexpr inline auto DECIC       = detail::CSI(std::nullopt, 0, 1, '\'', '}', VTType::VT420, "DECIC", "Insert column");
+// constexpr inline auto DECSCA      = detail::CSI(std::nullopt, 0, 1, '"', 'q', VTType::VT240, "DECSCA", "Select Character Protection Attribute");
+// constexpr inline auto DECSED      = detail::CSI('?', 0, 1, std::nullopt, 'J', VTType::VT240, "DECSED", "Selective Erase in Display");
+// constexpr inline auto DECSERA     = detail::CSI(std::nullopt, 0, 4, '$', '{', VTType::VT240, "DECSERA", "Selective Erase in Rectangular Area");
+// constexpr inline auto DECSEL      = detail::CSI('?', 0, 1, std::nullopt, 'K', VTType::VT240, "DECSEL", "Selective Erase in Line");
+// constexpr inline auto XTRESTORE   = detail::CSI('?', 0, ArgsMax, std::nullopt, 'r', VTExtension::XTerm, "XTRESTORE", "Restore DEC private modes.");
+// constexpr inline auto XTSAVE      = detail::CSI('?', 0, ArgsMax, std::nullopt, 's', VTExtension::XTerm, "XTSAVE", "Save DEC private modes.");
+// constexpr inline auto DECRM       = detail::CSI('?', 1, ArgsMax, std::nullopt, 'l', VTType::VT100, "DECRM", "Reset DEC-mode");
+// constexpr inline auto DECRQM      = detail::CSI('?', 1, 1, '$', 'p', VTType::VT100, "DECRQM", "Request DEC-mode");
+// constexpr inline auto DECRQM_ANSI = detail::CSI(std::nullopt, 1, 1, '$', 'p', VTType::VT100, "DECRQM_ANSI", "Request ANSI-mode");// NOLINT
+// constexpr inline auto DECRQPSR    = detail::CSI(std::nullopt, 1, 1, '$', 'w', VTType::VT320, "DECRQPSR", "Request presentation state report");
+// constexpr inline auto DECSCL      = detail::CSI(std::nullopt, 2, 2, '"', 'p', VTType::VT220, "DECSCL", "Set conformance level (DECSCL), VT220 and up.");
+// constexpr inline auto DECSCPP     = detail::CSI(std::nullopt, 0, 1, '$', '|', VTType::VT100, "DECSCPP", "Select 80 or 132 Columns per Page");
+// constexpr inline auto DECSNLS     = detail::CSI(std::nullopt, 0, 1, '*', '|', VTType::VT420, "DECSNLS", "Select number of lines per screen.");
+// constexpr inline auto DECSCUSR    = detail::CSI(std::nullopt, 0, 1, ' ', 'q', VTType::VT520, "DECSCUSR", "Set Cursor Style");
+// constexpr inline auto DECSLRM     = detail::CSI(std::nullopt, 0, 2, std::nullopt, 's', VTType::VT420, "DECSLRM", "Set left/right margin");
+// constexpr inline auto DECSM       = detail::CSI('?', 1, ArgsMax, std::nullopt, 'h', VTType::VT100, "DECSM", "Set DEC-mode");
+// constexpr inline auto DECSTBM     = detail::CSI(std::nullopt, 0, 2, std::nullopt, 'r', VTType::VT100, "DECSTBM", "Set top/bottom margin");
+// constexpr inline auto DECSTR      = detail::CSI(std::nullopt, 0, 0, '!', 'p', VTType::VT100, "DECSTR", "Soft terminal reset");
+// constexpr inline auto DECXCPR     = detail::CSI(std::nullopt, 0, 0, std::nullopt, '6', VTType::VT100, "DECXCPR", "Request extended cursor position");
+// constexpr inline auto DL          = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'M', VTType::VT100, "DL",  "Delete lines");
+// constexpr inline auto ECH         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'X', VTType::VT420, "ECH", "Erase characters");
+// constexpr inline auto ED          = detail::CSI(std::nullopt, 0, ArgsMax, std::nullopt, 'J', VTType::VT100, "ED",  "Erase in display");
+// constexpr inline auto EL          = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'K', VTType::VT100, "EL",  "Erase in line");
+// constexpr inline auto HPA         = detail::CSI(std::nullopt, 1, 1, std::nullopt, '`', VTType::VT100, "HPA", "Horizontal position absolute");
+// constexpr inline auto HPR         = detail::CSI(std::nullopt, 1, 1, std::nullopt, 'a', VTType::VT100, "HPR", "Horizontal position relative");
+// constexpr inline auto HVP         = detail::CSI(std::nullopt, 0, 2, std::nullopt, 'f', VTType::VT100, "HVP", "Horizontal and vertical position");
+// constexpr inline auto ICH         = detail::CSI(std::nullopt, 0, 1, std::nullopt, '@', VTType::VT420, "ICH", "Insert character");
+// constexpr inline auto IL          = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'L', VTType::VT100, "IL",  "Insert lines");
+// constexpr inline auto REP         = detail::CSI(std::nullopt, 1, 1, std::nullopt, 'b', VTType::VT100, "REP", "Repeat the preceding graphic character Ps times");
+// constexpr inline auto RM          = detail::CSI(std::nullopt, 1, ArgsMax, std::nullopt, 'l', VTType::VT100, "RM",  "Reset mode");
+// constexpr inline auto SCOSC       = detail::CSI(std::nullopt, 0, 0, std::nullopt, 's', VTType::VT100, "SCOSC", "Save Cursor (available only when DECLRMM is disabled)");
+// constexpr inline auto SD          = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'T', VTType::VT100, "SD",  "Scroll down (pan up)");
+// constexpr inline auto SETMARK     = detail::CSI('>', 0, 0, std::nullopt, 'M', VTExtension::Contour, "XTSETMARK", "Set Vertical Mark (experimental syntax)");
+// constexpr inline auto SGR         = detail::CSI(std::nullopt, 0, ArgsMax, std::nullopt, 'm', VTType::VT100, "SGR", "Select graphics rendition");
+// constexpr inline auto SM          = detail::CSI(std::nullopt, 1, ArgsMax, std::nullopt, 'h', VTType::VT100, "SM",  "Set mode");
+// constexpr inline auto SU          = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'S', VTType::VT100, "SU",  "Scroll up (pan down)");
+// constexpr inline auto TBC         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'g', VTType::VT100, "TBC", "Horizontal Tab Clear");
+// constexpr inline auto VPA         = detail::CSI(std::nullopt, 0, 1, std::nullopt, 'd', VTType::VT100, "VPA", "Vertical Position Absolute");
+// constexpr inline auto WINMANIP    = detail::CSI(std::nullopt, 1, 3, std::nullopt, 't', VTExtension::XTerm, "WINMANIP", "Window Manipulation");
+// constexpr inline auto XTSMGRAPHICS= detail::CSI('?', 2, 4, std::nullopt, 'S', VTExtension::XTerm, "XTSMGRAPHICS", "Setting/getting Sixel/ReGIS graphics settings.");
+// constexpr inline auto XTPOPCOLORS    = detail::CSI(std::nullopt, 0, ArgsMax, '#', 'Q', VTExtension::XTerm, "XTPOPCOLORS", "Pops the color palette from the palette's saved-stack.");
+// constexpr inline auto XTPUSHCOLORS   = detail::CSI(std::nullopt, 0, ArgsMax, '#', 'P', VTExtension::XTerm, "XTPUSHCOLORS", "Pushes the color palette onto the palette's saved-stack.");
+// constexpr inline auto XTREPORTCOLORS = detail::CSI(std::nullopt, 0, 0, '#', 'R', VTExtension::XTerm, "XTREPORTCOLORS", "Reports number of color palettes on the stack.");
+// constexpr inline auto XTSHIFTESCAPE=detail::CSI('>', 0, 1, std::nullopt, 's', VTExtension::XTerm, "XTSHIFTESCAPE", "Set/reset shift-escape options.");
+// constexpr inline auto XTVERSION   = detail::CSI('>', 0, 1, std::nullopt, 'q', VTExtension::XTerm, "XTVERSION", "Query terminal name and version");
+// constexpr inline auto XTCAPTURE   = detail::CSI('>', 0, 2, std::nullopt, 't', VTExtension::Contour, "XTCAPTURE", "Report screen buffer capture.");
+//
+// constexpr inline auto DECSSDT     = detail::CSI(std::nullopt, 0, 1, '$', '~', VTType::VT320, "DECSSDT", "Select Status Display (Line) Type");
+// constexpr inline auto DECSASD     = detail::CSI(std::nullopt, 0, 1, '$', '}', VTType::VT420, "DECSASD", "Select Active Status Display");
+// constexpr inline auto DECPS       = detail::CSI(std::nullopt, 3, 18, ',', '~', VTType::VT520, "DECPS", "Controls the sound frequency or notes");
 
-constexpr inline auto DECSSDT     = detail::CSI(std::nullopt, 0, 1, '$', '~', VTType::VT320, "DECSSDT", "Select Status Display (Line) Type");
-constexpr inline auto DECSASD     = detail::CSI(std::nullopt, 0, 1, '$', '}', VTType::VT420, "DECSASD", "Select Active Status Display");
-constexpr inline auto DECPS       = detail::CSI(std::nullopt, 3, 18, ',', '~', VTType::VT520, "DECPS", "Controls the sound frequency or notes");
 
+CSI_FUNCTION( ANSISYSSC   ,std::nullopt, 0, 0, std::nullopt, 'u', VTType::VT100, "Save Cursor (ANSI.SYS)");
+CSI_FUNCTION( CBT         ,std::nullopt, 0, 1, std::nullopt, 'Z', VTType::VT100, "Cursor Backward Tabulation");
+CSI_FUNCTION( CHA         ,std::nullopt, 0, 1, std::nullopt, 'G', VTType::VT100, "Move cursor to column");
+CSI_FUNCTION( CHT         ,std::nullopt, 0, 1, std::nullopt, 'I', VTType::VT100, "Cursor Horizontal Forward Tabulation");
+CSI_FUNCTION( CNL         ,std::nullopt, 0, 1, std::nullopt, 'E', VTType::VT100, "Move cursor to next line");
+CSI_FUNCTION( CPL         ,std::nullopt, 0, 1, std::nullopt, 'F', VTType::VT100, "Move cursor to previous line");
+CSI_FUNCTION( CPR         ,std::nullopt, 1, 1, std::nullopt, 'n', VTType::VT100, "Request Cursor position");
+CSI_FUNCTION( CUB         ,std::nullopt, 0, 1, std::nullopt, 'D', VTType::VT100, "Move cursor backward");
+CSI_FUNCTION( CUD         ,std::nullopt, 0, 1, std::nullopt, 'B', VTType::VT100, "Move cursor down");
+CSI_FUNCTION( CUF         ,std::nullopt, 0, 1, std::nullopt, 'C', VTType::VT100, "Move cursor forward");
+CSI_FUNCTION( CUP         ,std::nullopt, 0, 2, std::nullopt, 'H', VTType::VT100, "Move cursor to position");
+CSI_FUNCTION( CUU         ,std::nullopt, 0, 1, std::nullopt, 'A', VTType::VT100, "Move cursor up");
+CSI_FUNCTION( DA1         ,std::nullopt, 0, 1, std::nullopt, 'c', VTType::VT100, "Send primary device attributes");
+CSI_FUNCTION( DA2         ,'>', 0, 1, std::nullopt, 'c', VTType::VT100, "Send secondary device attributes");
+CSI_FUNCTION( DA3         ,'=', 0, 1, std::nullopt, 'c', VTType::VT100, "Send tertiary device attributes");
+CSI_FUNCTION( DCH         ,std::nullopt, 0, 1, std::nullopt, 'P', VTType::VT100, "Delete characters");
+CSI_FUNCTION( DECCARA     ,std::nullopt, 5, ArgsMax, '$', 'r', VTType::VT420, "Change Attributes in Rectangular Area");
+CSI_FUNCTION( DECCRA      ,std::nullopt, 0, 8, '$', 'v', VTType::VT420, "Copy rectangular area");
+CSI_FUNCTION( DECERA      ,std::nullopt, 0, 4, '$', 'z', VTType::VT420, "Erase rectangular area");
+CSI_FUNCTION( DECFRA      ,std::nullopt, 0, 5, '$', 'x', VTType::VT420, "Fill rectangular area");
+CSI_FUNCTION( DECDC       ,std::nullopt, 0, 1, '\'', '~', VTType::VT420, "Delete column");
+CSI_FUNCTION( DECIC       ,std::nullopt, 0, 1, '\'', '}', VTType::VT420, "Insert column");
+CSI_FUNCTION( DECSCA      ,std::nullopt, 0, 1, '"', 'q', VTType::VT240, "Select Character Protection Attribute");
+CSI_FUNCTION( DECSED      ,'?', 0, 1, std::nullopt, 'J', VTType::VT240, "Selective Erase in Display");
+CSI_FUNCTION( DECSERA     ,std::nullopt, 0, 4, '$', '{', VTType::VT240, "Selective Erase in Rectangular Area");
+CSI_FUNCTION( DECSEL      ,'?', 0, 1, std::nullopt, 'K', VTType::VT240, "Selective Erase in Line");
+CSI_FUNCTION( XTRESTORE   ,'?', 0, ArgsMax, std::nullopt, 'r', VTExtension::XTerm, "Restore DEC private modes.");
+CSI_FUNCTION( XTSAVE      ,'?', 0, ArgsMax, std::nullopt, 's', VTExtension::XTerm, "Save DEC private modes.");
+CSI_FUNCTION( DECRM       ,'?', 1, ArgsMax, std::nullopt, 'l', VTType::VT100, "Reset DEC-mode");
+CSI_FUNCTION( DECRQM      ,'?', 1, 1, '$', 'p', VTType::VT100, "Request DEC-mode");
+CSI_FUNCTION( DECRQM_ANSI ,std::nullopt, 1, 1, '$', 'p', VTType::VT100, "Request ANSI-mode");// NOLINT
+CSI_FUNCTION( DECRQPSR    ,std::nullopt, 1, 1, '$', 'w', VTType::VT320, "Request presentation state report");
+CSI_FUNCTION( DECSCL      ,std::nullopt, 2, 2, '"', 'p', VTType::VT220, "Set conformance level (DECSCL), VT220 and up.");
+CSI_FUNCTION( DECSCPP     ,std::nullopt, 0, 1, '$', '|', VTType::VT100, "Select 80 or 132 Columns per Page");
+CSI_FUNCTION( DECSNLS     ,std::nullopt, 0, 1, '*', '|', VTType::VT420, "Select number of lines per screen.");
+CSI_FUNCTION( DECSCUSR    ,std::nullopt, 0, 1, ' ', 'q', VTType::VT520, "Set Cursor Style");
+CSI_FUNCTION( DECSLRM     ,std::nullopt, 0, 2, std::nullopt, 's', VTType::VT420, "Set left/right margin");
+CSI_FUNCTION( DECSM       ,'?', 1, ArgsMax, std::nullopt, 'h', VTType::VT100, "Set DEC-mode");
+CSI_FUNCTION( DECSTBM     ,std::nullopt, 0, 2, std::nullopt, 'r', VTType::VT100, "Set top/bottom margin");
+CSI_FUNCTION( DECSTR      ,std::nullopt, 0, 0, '!', 'p', VTType::VT100, "Soft terminal reset");
+CSI_FUNCTION( DECXCPR     ,std::nullopt, 0, 0, std::nullopt, '6', VTType::VT100, "Request extended cursor position");
+CSI_FUNCTION( DL          ,std::nullopt, 0, 1, std::nullopt, 'M', VTType::VT100,  "Delete lines");
+CSI_FUNCTION( ECH         ,std::nullopt, 0, 1, std::nullopt, 'X', VTType::VT420, "Erase characters");
+CSI_FUNCTION( ED          ,std::nullopt, 0, ArgsMax, std::nullopt, 'J', VTType::VT100,  "Erase in display");
+CSI_FUNCTION( EL          ,std::nullopt, 0, 1, std::nullopt, 'K', VTType::VT100,  "Erase in line");
+CSI_FUNCTION( HPA         ,std::nullopt, 1, 1, std::nullopt, '`', VTType::VT100, "Horizontal position absolute");
+CSI_FUNCTION( HPR         ,std::nullopt, 1, 1, std::nullopt, 'a', VTType::VT100, "Horizontal position relative");
+CSI_FUNCTION( HVP         ,std::nullopt, 0, 2, std::nullopt, 'f', VTType::VT100, "Horizontal and vertical position");
+CSI_FUNCTION( ICH         ,std::nullopt, 0, 1, std::nullopt, '@', VTType::VT420, "Insert character");
+CSI_FUNCTION( IL          ,std::nullopt, 0, 1, std::nullopt, 'L', VTType::VT100,  "Insert lines");
+CSI_FUNCTION( REP         ,std::nullopt, 1, 1, std::nullopt, 'b', VTType::VT100, "Repeat the preceding graphic character Ps times");
+CSI_FUNCTION( RM          ,std::nullopt, 1, ArgsMax, std::nullopt, 'l', VTType::VT100,  "Reset mode");
+CSI_FUNCTION( SCOSC       ,std::nullopt, 0, 0, std::nullopt, 's', VTType::VT100, "Save Cursor (available only when DECLRMM is disabled)");
+CSI_FUNCTION( SD          ,std::nullopt, 0, 1, std::nullopt, 'T', VTType::VT100,  "Scroll down (pan up)");
+CSI_FUNCTION( SETMARK     ,'>', 0, 0, std::nullopt, 'M', VTExtension::Contour, "Set Vertical Mark (experimental syntax)");
+CSI_FUNCTION( SGR         ,std::nullopt, 0, ArgsMax, std::nullopt, 'm', VTType::VT100, "Select graphics rendition");
+CSI_FUNCTION( SM          ,std::nullopt, 1, ArgsMax, std::nullopt, 'h', VTType::VT100,  "Set mode");
+CSI_FUNCTION( SU          ,std::nullopt, 0, 1, std::nullopt, 'S', VTType::VT100,  "Scroll up (pan down)");
+CSI_FUNCTION( TBC         ,std::nullopt, 0, 1, std::nullopt, 'g', VTType::VT100, "Horizontal Tab Clear");
+CSI_FUNCTION( VPA         ,std::nullopt, 0, 1, std::nullopt, 'd', VTType::VT100, "Vertical Position Absolute");
+CSI_FUNCTION( WINMANIP    ,std::nullopt, 1, 3, std::nullopt, 't', VTExtension::XTerm, "Window Manipulation");
+CSI_FUNCTION( XTSMGRAPHICS,'?', 2, 4, std::nullopt, 'S', VTExtension::XTerm, "Setting/getting Sixel/ReGIS graphics settings.");
+CSI_FUNCTION( XTPOPCOLORS    ,std::nullopt, 0, ArgsMax, '#', 'Q', VTExtension::XTerm, "Pops the color palette from the palette's saved-stack.");
+CSI_FUNCTION( XTPUSHCOLORS   ,std::nullopt, 0, ArgsMax, '#', 'P', VTExtension::XTerm, "Pushes the color palette onto the palette's saved-stack.");
+CSI_FUNCTION( XTREPORTCOLORS ,std::nullopt, 0, 0, '#', 'R', VTExtension::XTerm, "Reports number of color palettes on the stack.");
+CSI_FUNCTION( XTSHIFTESCAPE,'>', 0, 1, std::nullopt, 's', VTExtension::XTerm, "Set/reset shift-escape options.");
+CSI_FUNCTION( XTVERSION   ,'>', 0, 1, std::nullopt, 'q', VTExtension::XTerm, "Query terminal name and version");
+CSI_FUNCTION( XTCAPTURE   ,'>', 0, 2, std::nullopt, 't', VTExtension::Contour, "Report screen buffer capture.");
+
+CSI_FUNCTION( DECSSDT     ,std::nullopt, 0, 1, '$', '~', VTType::VT320, "Select Status Display (Line) Type");
+CSI_FUNCTION( DECSASD     ,std::nullopt, 0, 1, '$', '}', VTType::VT420, "Select Active Status Display");
+CSI_FUNCTION( DECPS       ,std::nullopt, 3, 18, ',', '~', VTType::VT520, "Controls the sound frequency or notes");
+
+#undef CSI_FUNCTION
 // DCS functions
 constexpr inline auto STP         = detail::DCS(std::nullopt, 0, 0, '$', 'p', VTExtension::Contour, "XTSETPROFILE", "Set Terminal Profile");
 constexpr inline auto DECRQSS     = detail::DCS(std::nullopt, 0, 0, '$', 'q', VTType::VT420, "DECRQSS", "Request Status String");
@@ -635,7 +741,6 @@ inline auto allFunctions() noexcept
 // disabled sequences
 class SupportedSequences
 {
-
   private:
     [[nodiscard]] constexpr auto begin() noexcept { return _supportedSequences.data(); }
 
